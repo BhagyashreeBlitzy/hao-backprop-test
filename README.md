@@ -1,24 +1,20 @@
 # hao-backprop-test
-
 Test project for backprop integration. Do not touch!
 
 ## Overview
-
 This is a minimal Python Flask-based HTTP server that responds with "Hello, World!" to all requests. It is specifically designed for backprop integration testing.
 
 ## Requirements
-
 - Python 3.6 or higher
 - Flask 2.0.1 (installed via requirements.txt)
 
-## Setup
-
+## Setup Instructions
 1. Ensure Python 3 is installed on your system
    ```
    python --version
    ```
 
-2. (Recommended) Create a virtual environment
+2. (Optional but recommended) Create a virtual environment
    ```
    python -m venv venv
    ```
@@ -39,24 +35,25 @@ This is a minimal Python Flask-based HTTP server that responds with "Hello, Worl
    ```
 
 ## Running the Server
-
-Start the server with:
+Start the server with the following command:
 ```
 python app.py
 ```
 
-The server will run at http://127.0.0.1:3000/ and respond with "Hello, World!" to all HTTP requests.
+The server will start on localhost (127.0.0.1) port 3000 and display:
+```
+Server running at http://127.0.0.1:3000/
+```
 
 ## Testing
-
-You can test the server using any HTTP client (browser, curl, etc.) by sending requests to http://127.0.0.1:3000/
-
-Example with curl:
+You can test the server using any HTTP client (browser, curl, etc.) by sending requests to:
 ```
-curl http://127.0.0.1:3000/
+http://127.0.0.1:3000/
 ```
 
-Expected response:
-```
-Hello, World!
-```
+All requests will receive a "Hello, World!" response with a 200 OK status code.
+
+## Important Notes
+- This server is designed for local testing only
+- All HTTP methods and paths return the same response
+- The server binds only to localhost for security
