@@ -18,5 +18,5 @@ def catch_all(path):
 if __name__ == '__main__':
     # Log server startup information
     print(f"Server running at http://{hostname}:{port}/")
-    # Run the Flask development server
+    # Run the Flask application
     app.run(host=hostname, port=port)
