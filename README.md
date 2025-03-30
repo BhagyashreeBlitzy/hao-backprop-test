@@ -1,6 +1,5 @@
 # hao-backprop-test
-
-Test project for backprop integration using Python Flask. Do not touch!
+Test project for backprop integration using Python and Flask. Do not touch!
 
 ## Installation
 
@@ -10,11 +9,13 @@ Test project for backprop integration using Python Flask. Do not touch!
    pip install -r requirements.txt
    ```
 
-## Usage
+## Running the server
 
-Start the server:
+Start the server with:
 ```
 python app.py
 ```
 
-The server will run at http://127.0.0.1:3000/ and respond with "Hello, World!" to all requests.
+The server will be available at http://127.0.0.1:3000/
+
+This is a minimal test environment for backprop integration testing. All HTTP requests to the server will receive a "Hello, World!" response with a 200 status code.
