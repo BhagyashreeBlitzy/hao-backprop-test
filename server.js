@@ -4,13 +4,15 @@ const app = express();
 const hostname = '127.0.0.1';
 const port = 3000;
 
+// Root endpoint that returns "Hello, World!"
 app.get('/', (req, res) => {
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/plain');
   res.send('Hello, World!\n');
 });
 
-app.get('/good-evening', (req, res) => {
+// Evening endpoint that returns "Good evening"
+app.get('/evening', (req, res) => {
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/plain');
   res.send('Good evening');
