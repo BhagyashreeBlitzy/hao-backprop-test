@@ -1,0 +1,29 @@
+# This file defines who is responsible for code in the repository.
+# Each line is a file pattern followed by one or more owners.
+# Order is important; the last matching pattern takes precedence.
+# For more details, see: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Core Application Code
+src/backend/ @backend-team
+src/backend/server.js @server-experts
+src/backend/handlers/ @api-team
+
+# Testing
+src/backend/__tests__/ @qa-team
+src/backend/__tests__/integration/ @integration-testers
+
+# Infrastructure
+infrastructure/ @devops-team
+Dockerfile @container-experts
+infrastructure/scripts/ @automation-team
+
+# CI/CD
+.github/workflows/ @cicd-team
+
+# Documentation
+*.md @docs-team
+README.md @project-leads
+
+# Default Owners - These are the maintainers who will be requested for
+# review when someone opens a pull request in this repository
+* @project-maintainers
