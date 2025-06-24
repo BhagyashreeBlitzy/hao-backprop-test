@@ -1,14 +1,23 @@
-const http = require('http');
+const express = require('express');
 
+const app = express();
 const hostname = '127.0.0.1';
 const port = 3000;
 
-const server = http.createServer((req, res) => {
+// Define specific route handler for '/good-evening' endpoint
+app.get('/good-evening', (req, res) => {
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/plain');
-  res.end('Hello, World!\n');
+  res.send('Good evening\n');
 });
 
-server.listen(port, hostname, () => {
+// Define catch-all route handler for all other paths
+app.get('*', (req, res) => {
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'text/plain');
+  res.send('Hello world\n');
+});
+
+app.listen(port, hostname, () => {
   console.log(`Server running at http://${hostname}:${port}/`);
 });
