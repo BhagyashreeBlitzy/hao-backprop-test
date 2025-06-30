@@ -1,56 +1,245 @@
-# Prometheus configuration file for Node.js Hello World application monitoring
-# This defines metrics collection settings, scrape targets, and intervals
+# Prometheus Configuration for Node.js Tutorial Backend Application
+# Version: Compatible with Prometheus v2.52.0
+# Purpose: Educational observability setup for Node.js/Express.js tutorial application
+# Integration: Designed to work with Grafana dashboard for comprehensive monitoring
 
-# Global configuration specifies parameters that are valid in all other configuration contexts
+# =============================================================================
+# GLOBAL CONFIGURATION
+# =============================================================================
 global:
-  # How frequently to scrape targets by default
+  # Default scrape interval for all jobs (can be overridden per job)
   scrape_interval: 15s
-  # How frequently to evaluate rules
+  
+  # Default evaluation interval for alerting rules
   evaluation_interval: 15s
-  # How long until a scrape request times out
-  scrape_timeout: 10s
+  
+  # External labels to add to all metrics and alerts
+  external_labels:
+    environment: 'tutorial'
+    project: 'nodejs-backend-tutorial'
+    prometheus_instance: 'main'
 
-# Scrape configurations contain the targets and parameters for metrics collection
-scrape_configs:
-  # Self-monitoring of the Prometheus server
-  - job_name: 'prometheus'
-    static_configs:
-      - targets: ['localhost:9090']
-        labels:
-          service: 'prometheus'
-    metrics_path: '/metrics'
-    scheme: 'http'
-
-  # Application metrics monitoring
-  - job_name: 'hello-world-app'
-    static_configs:
-      - targets: ['hello-world-app:3000']
-        labels:
-          service: 'hello-world-app'
-    metrics_path: '/metrics'
-    scheme: 'http'
-    # More frequent scraping for application metrics
-    scrape_interval: 5s
-    scrape_timeout: 3s
-
-  # Application health monitoring
-  - job_name: 'hello-world-health'
-    static_configs:
-      - targets: ['hello-world-app:3000']
-        labels:
-          service: 'hello-world-app'
-          endpoint: 'health'
-    metrics_path: '/health'
-    scheme: 'http'
-    # Less frequent health checks
-    scrape_interval: 30s
-    scrape_timeout: 5s
-
-# Alerting configuration (placeholder - not fully configured for this simple application)
+# =============================================================================
+# ALERTING CONFIGURATION
+# =============================================================================
+# Configure Alertmanager endpoints (optional for tutorial)
 alerting:
   alertmanagers:
     - static_configs:
-        - targets: []  # No alertmanager configured
+        - targets:
+          # Uncomment if using Alertmanager
+          # - alertmanager:9093
 
-# Rules files (placeholder - not used in this simple configuration)
-rule_files: []
+# =============================================================================
+# RULE FILES CONFIGURATION
+# =============================================================================
+# Load alerting and recording rules from external files
+rule_files:
+  - "alert.rules.yml"    # Basic alerting rules for service health and performance
+  - "recording.rules.yml" # Optional: Recording rules for commonly used queries
+  # Note: These files should be created separately if alerting is required
+
+# =============================================================================
+# SCRAPE CONFIGURATION
+# =============================================================================
+scrape_configs:
+  
+  # ---------------------------------------------------------------------------
+  # NODE.JS BACKEND APPLICATION
+  # ---------------------------------------------------------------------------
+  # Primary scrape job for the Node.js tutorial backend application
+  # This job name MUST match the Grafana dashboard queries: "nodejs-backend"
+  - job_name: 'nodejs-backend'
+    
+    # Scrape interval for this specific job
+    scrape_interval: 15s
+    
+    # HTTP timeout for scrape requests
+    scrape_timeout: 10s
+    
+    # Metrics endpoint path (default: /metrics)
+    metrics_path: /metrics
+    
+    # Scrape protocol and parameters
+    scheme: http
+    
+    # Static target configuration for local development
+    static_configs:
+      - targets: 
+          - 'backend:3000'        # Docker Compose service name and port
+          # Alternative configurations for different environments:
+          # - 'localhost:3000'    # Local development
+          # - '127.0.0.1:3000'    # Explicit local IP
+    
+    # Metric relabeling rules to enhance label consistency
+    relabel_configs:
+      # Extract clean instance name from target address
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '([^:]+)(?::\d+)?'
+        replacement: '${1}'
+      
+      # Add service label for better metric organization
+      - target_label: service
+        replacement: 'nodejs-backend'
+      
+      # Add application label for multi-application setups
+      - target_label: application
+        replacement: 'tutorial-backend'
+    
+    # Metric relabeling (post-scrape processing)
+    metric_relabel_configs:
+      # Standardize metric names if needed
+      - source_labels: [__name__]
+        regex: 'nodejs_(.+)'
+        target_label: __name__
+        replacement: 'nodejs_${1}'
+      
+      # Drop unnecessary metrics to reduce storage (optional)
+      # Uncomment to exclude internal Node.js metrics not used in dashboard
+      # - source_labels: [__name__]
+      #   regex: 'nodejs_version_info|process_max_fds|process_open_fds'
+      #   action: drop
+
+  # ---------------------------------------------------------------------------
+  # PROMETHEUS SELF-MONITORING
+  # ---------------------------------------------------------------------------
+  # Monitor Prometheus itself for operational metrics
+  - job_name: 'prometheus'
+    
+    # More frequent scraping for Prometheus internal metrics
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    
+    # Prometheus metrics endpoint
+    metrics_path: /metrics
+    scheme: http
+    
+    static_configs:
+      - targets:
+          - 'localhost:9090'      # Prometheus default port
+          # Alternative for containerized setup:
+          # - 'prometheus:9090'
+    
+    # Relabeling for Prometheus metrics
+    relabel_configs:
+      - target_label: service
+        replacement: 'prometheus'
+      
+      - target_label: component
+        replacement: 'monitoring'
+
+  # ---------------------------------------------------------------------------
+  # OPTIONAL: NODE EXPORTER (System Metrics)
+  # ---------------------------------------------------------------------------
+  # Uncomment to enable system-level metrics collection
+  # Requires Node Exporter to be deployed alongside the application
+  # - job_name: 'node-exporter'
+  #   
+  #   scrape_interval: 15s
+  #   scrape_timeout: 10s
+  #   
+  #   static_configs:
+  #     - targets:
+  #         - 'node-exporter:9100'
+  #   
+  #   relabel_configs:
+  #     - target_label: service
+  #       replacement: 'node-exporter'
+  #     
+  #     - target_label: component
+  #       replacement: 'system-metrics'
+
+  # ---------------------------------------------------------------------------
+  # OPTIONAL: GRAFANA MONITORING
+  # ---------------------------------------------------------------------------
+  # Monitor Grafana instance if deployed in the same environment
+  # - job_name: 'grafana'
+  #   
+  #   scrape_interval: 30s
+  #   scrape_timeout: 10s
+  #   
+  #   metrics_path: /metrics
+  #   
+  #   static_configs:
+  #     - targets:
+  #         - 'grafana:3000'
+  #   
+  #   relabel_configs:
+  #     - target_label: service
+  #       replacement: 'grafana'
+  #     
+  #     - target_label: component
+  #       replacement: 'visualization'
+
+# =============================================================================
+# REMOTE WRITE CONFIGURATION (Optional)
+# =============================================================================
+# Configure remote storage for long-term metric retention
+# Uncomment and configure for production environments
+# remote_write:
+#   - url: "https://your-remote-storage/api/v1/write"
+#     basic_auth:
+#       username: "prometheus"
+#       password: "your-password"
+#     queue_config:
+#       max_samples_per_send: 1000
+#       capacity: 2500
+#       max_shards: 200
+
+# =============================================================================
+# REMOTE READ CONFIGURATION (Optional)
+# =============================================================================
+# Configure remote storage for historical data queries
+# remote_read:
+#   - url: "https://your-remote-storage/api/v1/read"
+#     basic_auth:
+#       username: "prometheus"
+#       password: "your-password"
+
+# =============================================================================
+# CONFIGURATION NOTES
+# =============================================================================
+# 
+# JOB NAME COMPATIBILITY:
+# - The 'nodejs-backend' job name is required for Grafana dashboard compatibility
+# - Dashboard queries specifically filter by job="nodejs-backend"
+# - Changing this job name will break dashboard visualizations
+#
+# EXPECTED METRICS:
+# The Grafana dashboard expects these metrics from the Node.js application:
+# - up{job="nodejs-backend"} - Service availability
+# - http_requests_total{job="nodejs-backend"} - HTTP request counters with status labels
+# - http_request_duration_seconds_bucket{job="nodejs-backend"} - Request duration histograms
+# - process_resident_memory_bytes{job="nodejs-backend"} - Memory usage
+# - nodejs_heap_size_used_bytes{job="nodejs-backend"} - Node.js heap usage
+# - process_cpu_seconds_total{job="nodejs-backend"} - CPU usage counter
+# - nodejs_active_handles{job="nodejs-backend"} - Active handles count
+# - nodejs_active_requests{job="nodejs-backend"} - Active requests count  
+# - nodejs_eventloop_lag_seconds{job="nodejs-backend"} - Event loop lag
+# - process_start_time_seconds{job="nodejs-backend"} - Process start time
+#
+# METRICS INSTRUMENTATION:
+# The Node.js application must be instrumented with a Prometheus client library
+# such as 'prom-client' to expose these metrics at the /metrics endpoint.
+#
+# SECURITY CONSIDERATIONS:
+# - For production deployments, consider:
+#   - Enabling TLS/HTTPS for scrape endpoints
+#   - Authentication for metrics endpoints
+#   - Network segmentation for monitoring traffic
+#   - Regular security updates for Prometheus version
+#
+# PERFORMANCE TUNING:
+# - Adjust scrape_interval based on application requirements
+# - Use recording rules for expensive queries
+# - Configure appropriate retention policies
+# - Monitor Prometheus resource usage
+#
+# EDUCATIONAL USAGE:
+# This configuration is optimized for educational purposes and local development.
+# For production deployments, additional considerations include:
+# - Service discovery configuration
+# - High availability setup
+# - Backup and disaster recovery
+# - Integration with external alerting systems
