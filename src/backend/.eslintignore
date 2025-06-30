@@ -1,0 +1,16 @@
+node_modules/
+package-lock.json
+package.json
+dist/
+build/
+coverage/
+logs/
+*.log
+.env
+.env.example
+jest.config.js
+nodemon.json
+tsconfig.json
+*.test.js
+tests/
+README.md

@@ -1,0 +1,435 @@
+# =============================================================================
+# Kubernetes Service Manifest for Node.js Tutorial Backend Application
+# =============================================================================
+# This Service resource exposes the Node.js tutorial backend pods (Express.js
+# HTTP server) as a stable network endpoint within the Kubernetes cluster,
+# providing load balancing, service discovery, and integration with Ingress
+# for external HTTP routing to the /hello endpoint.
+#
+# Application Details:
+# - Node.js v22.11.0 LTS with Express.js v5.1.0 framework
+# - Single /hello endpoint returning "Hello world" message
+# - HTTP/1.1 compliant server listening on port 3000
+# - Stateless architecture suitable for load balancing
+#
+# Key Features:
+# - ClusterIP service type for internal cluster communication
+# - Load balancing across all healthy backend pods
+# - DNS-based service discovery within the cluster
+# - Integration with Deployment pod selector (app: nodejs-tutorial-backend)
+# - Support for Ingress controller integration for external access
+# - Production-ready configuration with comprehensive metadata
+#
+# Educational Value:
+# - Demonstrates Kubernetes Service resource structure and configuration
+# - Shows network abstraction and load balancing concepts
+# - Illustrates service discovery and DNS integration patterns
+# - Provides foundation for understanding cluster networking
+# - Demonstrates integration between Deployment, Service, and Ingress resources
+#
+# Technical Requirements Addressed:
+# - Pod Network Exposure and Service Discovery (F-001, NET-001)
+# - Load Balancing and High Availability (F-002, SCALE-001)
+# - Integration with Deployment and Ingress (NET-002, ROUTE-001)
+# - Port Mapping and Protocol Compliance (HTTP-001, PORT-001)
+# - Educational Clarity and Minimalism (EDU-001, DOC-001)
+# =============================================================================
+
+apiVersion: v1
+kind: Service
+metadata:
+  # Service resource name - used for DNS resolution and resource management
+  # Must be unique within the namespace and follow DNS-1123 naming conventions
+  # This name becomes the DNS hostname for service discovery (nodejs-tutorial-backend.default.svc.cluster.local)
+  name: nodejs-tutorial-backend
+  
+  # Namespace specification (optional - defaults to 'default')
+  # For educational purposes, we'll use the default namespace
+  # Production deployments should use dedicated namespaces for better organization
+  # namespace: nodejs-tutorial
+  
+  # Resource labels for identification, organization, and service management
+  # These labels enable resource selection, monitoring, and operational management
+  labels:
+    app: nodejs-tutorial-backend
+    component: backend
+    tier: application
+    version: "1.0.0"
+    environment: production
+    framework: express
+    language: javascript
+    runtime: nodejs
+    service-type: web
+    
+  # Annotations provide additional metadata for tooling, documentation, and operational context
+  # These are not used for resource selection but provide valuable information for management
+  annotations:
+    # Service description and purpose
+    description: "Kubernetes Service for Node.js tutorial backend application with Express.js framework"
+    
+    # Educational metadata for learning purposes
+    tutorial.nodejs.io/purpose: "Educational demonstration of Kubernetes Service networking"
+    tutorial.nodejs.io/level: "beginner"
+    tutorial.nodejs.io/framework: "express-5.1.0"
+    tutorial.nodejs.io/runtime: "nodejs-22.11.0-lts"
+    tutorial.nodejs.io/endpoint: "/hello"
+    tutorial.nodejs.io/method: "GET"
+    tutorial.nodejs.io/response: "Hello world"
+    
+    # Network and routing configuration information
+    service.kubernetes.io/load-balancer-type: "internal"
+    service.kubernetes.io/protocol: "HTTP"
+    service.kubernetes.io/port: "3000"
+    service.kubernetes.io/target-port: "3000"
+    
+    # Integration and dependency information
+    service.kubernetes.io/depends-on: "deployment/nodejs-tutorial-backend"
+    service.kubernetes.io/integrates-with: "ingress/nodejs-tutorial-ingress"
+    
+    # Contact and documentation information
+    contact: "nodejs-tutorial-authors@example.com"
+    documentation: "https://github.com/nodejs-tutorial/backend"
+    
+    # Operational metadata
+    service.kubernetes.io/created-by: "kubernetes-tutorial"
+    service.kubernetes.io/managed-by: "kubectl"
+    
+    # Load balancing and traffic management
+    service.kubernetes.io/load-balance-algorithm: "round-robin"
+    service.kubernetes.io/session-affinity: "None"
+    
+    # Monitoring and observability annotations
+    prometheus.io/scrape: "false"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "3000"
+    
+    # Security and compliance metadata
+    security.kubernetes.io/network-policy: "default-deny-ingress"
+    compliance.tutorial.io/approved: "true"
+
+# Service specification defining network exposure and routing behavior
+spec:
+  # Service type determines how the service is exposed
+  # ClusterIP: Internal cluster access only (default)
+  # NodePort: External access via node IP and port
+  # LoadBalancer: External access via cloud load balancer
+  # ExternalName: DNS CNAME mapping to external service
+  type: ClusterIP
+  
+  # Cluster IP allocation strategy
+  # None: Headless service for direct pod access
+  # Empty: Automatic IP allocation by Kubernetes
+  # Specific IP: Manual IP assignment (advanced use case)
+  # For tutorial purposes, we use automatic allocation
+  # clusterIP: ""
+  
+  # IP family configuration for dual-stack networking
+  # IPv4, IPv6, or both for modern networking requirements
+  # Single-stack IPv4 is sufficient for tutorial purposes
+  ipFamilyPolicy: SingleStack
+  ipFamilies:
+    - IPv4
+  
+  # Session affinity configuration
+  # None: No session affinity, requests distributed evenly
+  # ClientIP: Routes requests from same client IP to same pod
+  # For stateless tutorial application, no affinity is needed
+  sessionAffinity: None
+  
+  # Session affinity timeout (when sessionAffinity is ClientIP)
+  # sessionAffinityConfig:
+  #   clientIP:
+  #     timeoutSeconds: 10800  # 3 hours
+  
+  # External traffic policy for NodePort and LoadBalancer services
+  # Cluster: Traffic distributed across all nodes (default)
+  # Local: Traffic only to pods on receiving node
+  # Not applicable for ClusterIP service type
+  # externalTrafficPolicy: Cluster
+  
+  # Internal traffic policy configuration
+  # Cluster: Traffic distributed to all endpoints cluster-wide
+  # Local: Traffic only to node-local endpoints
+  # Cluster is appropriate for tutorial load balancing
+  internalTrafficPolicy: Cluster
+  
+  # Pod selector configuration
+  # Identifies which pods should receive traffic from this service
+  # Must match labels configured in the Deployment pod template
+  # This creates the fundamental link between Service and Deployment
+  selector:
+    app: nodejs-tutorial-backend
+    component: backend
+  
+  # Port configuration for service exposure
+  # Defines how traffic flows from service to target pods
+  ports:
+    # Primary HTTP port for web traffic
+    - name: http
+      # Service port - exposed to cluster and other services
+      # This is the port other services use to connect to this service
+      port: 3000
+      
+      # Target port on the backend pods
+      # Must match containerPort in Deployment specification
+      # Can be port number or named port from container spec
+      targetPort: 3000
+      
+      # Protocol for network communication
+      # TCP: Transmission Control Protocol (reliable, connection-oriented)
+      # UDP: User Datagram Protocol (fast, connectionless)
+      # SCTP: Stream Control Transmission Protocol (advanced)
+      protocol: TCP
+    
+    # Optional additional ports for future extensibility
+    # Examples of additional ports that might be useful:
+    
+    # Health check port (if different from main application port)
+    # - name: health
+    #   port: 8080
+    #   targetPort: 8080
+    #   protocol: TCP
+    
+    # Metrics port for monitoring integration
+    # - name: metrics
+    #   port: 9090
+    #   targetPort: 9090
+    #   protocol: TCP
+    
+    # Debug port for development and troubleshooting
+    # - name: debug
+    #   port: 9229
+    #   targetPort: 9229
+    #   protocol: TCP
+  
+  # External IP addresses for direct external access (advanced)
+  # Not commonly used with ClusterIP services
+  # Useful for specific network integration requirements
+  # externalIPs:
+  #   - 192.168.1.100
+  
+  # Load balancer source ranges (for LoadBalancer service type)
+  # Restricts access to specific IP ranges for security
+  # Not applicable for ClusterIP service type
+  # loadBalancerSourceRanges:
+  #   - 10.0.0.0/8
+  #   - 192.168.0.0/16
+  
+  # External name for ExternalName service type
+  # Maps service to external DNS name
+  # Not applicable for ClusterIP service type
+  # externalName: external-backend.example.com
+  
+  # Health check node port (for LoadBalancer service type)
+  # Used by external load balancers for health checking
+  # Not applicable for ClusterIP service type
+  # healthCheckNodePort: 32000
+
+# =============================================================================
+# SERVICE DISCOVERY AND DNS INTEGRATION
+# =============================================================================
+#
+# This Service automatically creates DNS records for service discovery:
+#
+# CLUSTER DNS RESOLUTION:
+# - Short name: nodejs-tutorial-backend
+# - Namespace-qualified: nodejs-tutorial-backend.default
+# - Fully-qualified: nodejs-tutorial-backend.default.svc.cluster.local
+#
+# DNS RECORD TYPES:
+# - A Record: Points to ClusterIP address
+# - SRV Record: Provides port and protocol information
+# - CNAME Record: Provides service name aliases
+#
+# SERVICE DISCOVERY EXAMPLES:
+# From within the same namespace:
+# curl http://nodejs-tutorial-backend:3000/hello
+#
+# From different namespace:
+# curl http://nodejs-tutorial-backend.default:3000/hello
+#
+# Fully qualified domain name:
+# curl http://nodejs-tutorial-backend.default.svc.cluster.local:3000/hello
+#
+# =============================================================================
+# LOAD BALANCING AND TRAFFIC DISTRIBUTION
+# =============================================================================
+#
+# The Service automatically load balances traffic across healthy backend pods:
+#
+# LOAD BALANCING ALGORITHM:
+# - Round-robin distribution by default
+# - Weighted distribution based on pod readiness
+# - Automatic exclusion of failed pods
+# - Session affinity support when configured
+#
+# ENDPOINT MANAGEMENT:
+# - Kubernetes automatically manages endpoints
+# - Endpoints updated when pods are added/removed
+# - Health checks determine endpoint availability
+# - Endpoint subsets for different service configurations
+#
+# TRAFFIC FLOW:
+# Client Request → Service ClusterIP → Endpoint Selection → Pod Target
+#
+# =============================================================================
+# INTEGRATION WITH DEPLOYMENT AND INGRESS
+# =============================================================================
+#
+# DEPLOYMENT INTEGRATION:
+# This Service selects pods created by the Deployment using label matching:
+#
+# Deployment pod labels:
+#   app: nodejs-tutorial-backend
+#   component: backend
+#
+# Service selector:
+#   app: nodejs-tutorial-backend
+#   component: backend
+#
+# INGRESS INTEGRATION:
+# This Service is referenced by Ingress resources for external access:
+#
+# Ingress backend configuration:
+#   service:
+#     name: nodejs-tutorial-backend
+#     port:
+#       number: 3000
+#
+# COMPLETE NETWORKING ARCHITECTURE:
+# External Client → Ingress Controller → Service → Backend Pods
+#                     ↓                    ↓           ↓
+#                 HTTP Routing       Load Balancing  Application
+#                 SSL Termination    Service Discovery  Processing
+#                 Path-based         Health Checking    Response
+#
+# =============================================================================
+# OPERATIONAL COMMANDS AND MANAGEMENT
+# =============================================================================
+#
+# SERVICE MANAGEMENT COMMANDS:
+#
+# Create Service:
+# kubectl apply -f infrastructure/kubernetes/service.yaml
+#
+# Verify Service Status:
+# kubectl get service nodejs-tutorial-backend
+# kubectl describe service nodejs-tutorial-backend
+#
+# View Service Endpoints:
+# kubectl get endpoints nodejs-tutorial-backend
+# kubectl describe endpoints nodejs-tutorial-backend
+#
+# Test Service Connectivity:
+# kubectl port-forward service/nodejs-tutorial-backend 3000:3000
+# curl http://localhost:3000/hello
+#
+# Service DNS Testing:
+# kubectl run test-pod --image=curlimages/curl -it --rm -- /bin/sh
+# curl http://nodejs-tutorial-backend:3000/hello
+#
+# Delete Service:
+# kubectl delete service nodejs-tutorial-backend
+#
+# TROUBLESHOOTING COMMANDS:
+#
+# Check Service Configuration:
+# kubectl get service nodejs-tutorial-backend -o yaml
+# kubectl describe service nodejs-tutorial-backend
+#
+# Verify Pod Selection:
+# kubectl get pods -l app=nodejs-tutorial-backend
+# kubectl describe endpoints nodejs-tutorial-backend
+#
+# Test Network Connectivity:
+# kubectl exec -it <pod-name> -- curl http://nodejs-tutorial-backend:3000/hello
+#
+# Check DNS Resolution:
+# kubectl exec -it <pod-name> -- nslookup nodejs-tutorial-backend
+# kubectl exec -it <pod-name> -- dig nodejs-tutorial-backend.default.svc.cluster.local
+#
+# Monitor Service Events:
+# kubectl get events --field-selector involvedObject.name=nodejs-tutorial-backend
+#
+# =============================================================================
+# SECURITY CONSIDERATIONS AND BEST PRACTICES
+# =============================================================================
+#
+# NETWORK SECURITY:
+# - ClusterIP type restricts access to cluster-internal traffic only
+# - Use NetworkPolicies to further restrict inter-pod communication
+# - Consider service mesh (Istio, Linkerd) for advanced security features
+# - Implement TLS encryption for sensitive data transmission
+#
+# ACCESS CONTROL:
+# - Use RBAC policies to control service management permissions
+# - Implement service accounts with minimal required permissions
+# - Regular audit of service configurations and access patterns
+# - Monitor service usage and access logs
+#
+# SERVICE CONFIGURATION SECURITY:
+# - Validate service selector labels to prevent misrouting
+# - Use specific port numbers rather than generic port ranges
+# - Implement proper session affinity when required for security
+# - Regular review of service annotations and metadata
+#
+# MONITORING AND ALERTING:
+# - Monitor service endpoint health and availability
+# - Set up alerts for service configuration changes
+# - Track service response times and error rates
+# - Implement proper logging for audit and troubleshooting
+#
+# =============================================================================
+# PERFORMANCE OPTIMIZATION AND SCALING
+# =============================================================================
+#
+# SERVICE PERFORMANCE:
+# - ClusterIP services have minimal performance overhead
+# - Service proxy mode affects performance (iptables vs IPVS)
+# - Consider headless services for direct pod access when needed
+# - Monitor service connection pooling and reuse
+#
+# SCALING CONSIDERATIONS:
+# - Services automatically scale with deployment replica changes
+# - Load balancing distributes traffic across all healthy pods
+# - Service capacity scales horizontally with pod count
+# - Consider service topology for geographically distributed deployments
+#
+# OPTIMIZATION STRATEGIES:
+# - Use appropriate session affinity for stateful applications
+# - Implement proper health checks in backend pods
+# - Consider service mesh for advanced traffic management
+# - Monitor and tune service proxy performance settings
+#
+# =============================================================================
+# EDUCATIONAL NOTES FOR KUBERNETES LEARNING
+# =============================================================================
+#
+# KEY CONCEPTS DEMONSTRATED:
+#
+# 1. SERVICE ABSTRACTION:
+#    - Services provide stable network endpoints for dynamic pod sets
+#    - Abstract pod IP addresses and provide consistent access points
+#    - Enable load balancing and service discovery patterns
+#
+# 2. LABEL SELECTORS:
+#    - Services use labels to identify target pods
+#    - Loose coupling between services and pods
+#    - Dynamic endpoint management based on pod lifecycle
+#
+# 3. NETWORK POLICIES:
+#    - ClusterIP type provides cluster-internal networking
+#    - Integration with Kubernetes DNS for service discovery
+#    - Foundation for ingress and external access patterns
+#
+# 4. LOAD BALANCING:
+#    - Automatic traffic distribution across healthy pods
+#    - Built-in health checking and endpoint management
+#    - Support for various load balancing algorithms
+#
+# 5. INTEGRATION PATTERNS:
+#    - Services bridge deployments and external access
+#    - Enable microservices communication patterns
+#    - Support for complex networking architectures
+#
+# =============================================================================

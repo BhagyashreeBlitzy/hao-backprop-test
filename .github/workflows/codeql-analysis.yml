@@ -1,0 +1,133 @@
+# GitHub Actions workflow for CodeQL static analysis of the Node.js tutorial backend application
+# This workflow provides automated security and quality scanning on every push and pull request,
+# ensuring the codebase is continuously monitored for vulnerabilities and compliance with security best practices.
+# 
+# Educational Purpose: Demonstrates integration of static analysis security testing (SAST) into modern
+# Node.js/Express.js CI/CD pipelines, complementing the main build, lint, and test jobs.
+#
+# CodeQL is GitHub's semantic code analysis engine that helps identify security vulnerabilities,
+# code quality issues, and potential bugs in JavaScript/TypeScript codebases.
+
+name: "CodeQL Analysis"
+
+# Workflow triggers - runs on code changes and weekly schedule for comprehensive coverage
+on:
+  # Trigger on pushes to main branch and feature branches for immediate security feedback
+  push:
+    branches: 
+      - main
+      - "feature/**"
+    # Focus on backend source code changes that could introduce security issues
+    paths:
+      - 'src/backend/**'
+      - '.github/workflows/codeql-analysis.yml'
+  
+  # Trigger on pull requests targeting main and feature branches for pre-merge security validation
+  pull_request:
+    branches: 
+      - main
+      - "feature/**"
+    # Analyze backend changes in pull requests to prevent security vulnerabilities from being merged
+    paths:
+      - 'src/backend/**'
+      - '.github/workflows/codeql-analysis.yml'
+  
+  # Weekly scheduled scan to catch new security patterns and ensure continuous compliance
+  # Runs every Sunday at midnight UTC to provide regular security posture assessment
+  schedule:
+    - cron: '0 0 * * 0'
+
+# Define workflow jobs - single CodeQL analysis job for comprehensive security scanning
+jobs:
+  # Primary CodeQL analysis job that performs static security analysis on the Node.js codebase
+  analyze:
+    name: "CodeQL Security Analysis"
+    runs-on: ubuntu-latest
+    
+    # Required permissions for CodeQL to upload security findings to GitHub Security tab
+    # These permissions enable integration with GitHub's security features and vulnerability management
+    permissions:
+      # Read access to repository contents for code analysis
+      contents: read
+      # Read access to GitHub Actions for workflow integration
+      actions: read
+      # Write access to security events for uploading CodeQL results to Security tab
+      security-events: write
+    
+    # Step-by-step CodeQL analysis process with clear educational naming
+    steps:
+      # Step 1: Repository checkout - retrieve the latest codebase for analysis
+      # Uses the official GitHub checkout action to access repository contents
+      - name: "Checkout Repository Code"
+        uses: actions/checkout@v3
+        with:
+          # Fetch full git history for comprehensive analysis of code changes
+          fetch-depth: 0
+      
+      # Step 2: CodeQL initialization - set up the analysis environment for JavaScript
+      # Configures CodeQL to analyze JavaScript/TypeScript code in the Node.js backend
+      - name: "Initialize CodeQL Analysis Environment"
+        uses: github/codeql-action/init@v3
+        with:
+          # Specify JavaScript as the primary language for analysis
+          # CodeQL supports multiple languages, but this project focuses on JavaScript/Node.js
+          languages: javascript
+          # Configure CodeQL to focus on the backend source directory
+          # This improves analysis efficiency by targeting relevant code paths
+          source-root: src/backend
+          # Use default CodeQL query suites for comprehensive security and quality analysis
+          # Includes security queries, code quality checks, and maintainability rules
+          queries: +security-and-quality
+      
+      # Step 3: Automatic build - prepare the Node.js project for analysis
+      # CodeQL autobuild automatically detects and runs the appropriate build commands
+      # for Node.js projects based on package.json configuration
+      - name: "Build Node.js Project for Analysis"
+        uses: github/codeql-action/autobuild@v3
+        with:
+          # Set working directory to backend source for build context
+          working-directory: src/backend
+        env:
+          # Configure Node.js environment for analysis build
+          NODE_ENV: production
+          # Ensure compatibility with Node.js v22.x LTS as specified in package.json
+          NODE_VERSION: 22
+      
+      # Step 4: Execute CodeQL analysis - perform comprehensive security scanning
+      # Analyzes the built codebase for security vulnerabilities, code quality issues,
+      # and potential bugs using GitHub's semantic analysis engine
+      - name: "Perform CodeQL Security and Quality Analysis"
+        uses: github/codeql-action/analyze@v3
+        with:
+          # Specify analysis category for result organization in GitHub Security tab
+          category: "nodejs-backend-analysis"
+          # Upload results to GitHub Security tab for vulnerability management
+          upload: true
+          # Configure analysis to focus on security-critical findings
+          ram: 6144
+          threads: 2
+        env:
+          # Provide GitHub token for secure result upload
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Step 5: Analysis results summary - provide feedback on scan completion
+      # This step runs regardless of analysis outcome to ensure visibility
+      - name: "CodeQL Analysis Summary"
+        if: always()
+        run: |
+          echo "🔍 CodeQL Analysis Completed for Node.js Tutorial Backend"
+          echo "📊 Analysis Type: Security and Quality Assessment"
+          echo "🔧 Language Analyzed: JavaScript (Node.js v22.x LTS)"
+          echo "📁 Source Directory: src/backend"
+          echo "🔐 Results uploaded to GitHub Security tab"
+          echo "📈 Check the Security tab for detailed vulnerability reports"
+          echo ""
+          echo "Educational Note: This workflow demonstrates integration of static"
+          echo "analysis security testing (SAST) into Node.js/Express.js CI/CD pipelines."
+          echo "CodeQL helps identify security vulnerabilities, code quality issues,"
+          echo "and maintains compliance with security best practices."
+
+# Workflow completion marker for educational clarity
+# This CodeQL workflow provides automated security analysis for the Node.js tutorial backend,
+# ensuring continuous monitoring of code quality and security compliance. Results are available
+# in the GitHub Security tab for review and remediation tracking.

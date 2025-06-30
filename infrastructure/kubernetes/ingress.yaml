@@ -1,0 +1,567 @@
+# =============================================================================
+# Kubernetes Ingress Manifest for Node.js Tutorial Backend Application
+# =============================================================================
+# This Ingress resource exposes the Node.js tutorial backend Service to external
+# HTTP clients, enabling access to the /hello endpoint via path-based routing.
+# The Ingress integrates with ingress controllers (NGINX, Traefik, etc.) to
+# provide external HTTP access, load balancing, and routing capabilities.
+#
+# Application Details:
+# - Node.js v22.11.0 LTS with Express.js v5.1.0 framework
+# - Single /hello endpoint returning "Hello world" message
+# - HTTP/1.1 compliant server accessible via path-based routing
+# - Stateless architecture suitable for external load balancing
+#
+# Key Features:
+# - Path-based routing for /hello endpoint to backend Service
+# - NGINX ingress controller integration (configurable for other controllers)
+# - HTTP/1.1 protocol compliance and standard header handling
+# - Production-ready configuration with comprehensive metadata
+# - Support for local development, testing, and cloud deployment
+# - Educational documentation for Kubernetes ingress concepts
+#
+# Educational Value:
+# - Demonstrates Kubernetes Ingress resource structure and configuration
+# - Shows external traffic routing and ingress controller integration
+# - Illustrates path-based routing and HTTP protocol handling
+# - Provides foundation for understanding cluster networking and external access
+# - Demonstrates integration between Ingress, Service, and Deployment resources
+#
+# Technical Requirements Addressed:
+# - External HTTP Exposure and Routing (F-001, NET-003, ROUTE-002)
+# - Integration with Service and Deployment (NET-002, ROUTE-001)
+# - Path-Based Routing and HTTP Compliance (HTTP-001, ROUTE-003)
+# - Educational Clarity and Minimalism (EDU-001, DOC-001)
+# =============================================================================
+
+# Kubernetes API version for Ingress resources
+# networking.k8s.io/v1 is the stable API version for Ingress (Kubernetes 1.19+)
+# Previous versions used extensions/v1beta1 or networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
+
+# Resource type - Ingress provides HTTP and HTTPS routing to services
+# Ingress acts as a layer 7 (application layer) load balancer and reverse proxy
+kind: Ingress
+
+# Resource metadata for identification, organization, and management
+metadata:
+  # Ingress resource name - used for resource management and references
+  # Must be unique within the namespace and follow DNS-1123 naming conventions
+  # Recommended to align with service name for clarity and consistency  
+  name: nodejs-tutorial-backend
+  
+  # Namespace specification (optional - defaults to 'default')
+  # For educational purposes, we'll use the default namespace
+  # Production deployments should use dedicated namespaces for better organization
+  # namespace: nodejs-tutorial
+  
+  # Resource labels for identification, organization, and resource management
+  # These labels enable resource selection, monitoring, and operational management
+  labels:
+    app: nodejs-tutorial-backend
+    component: ingress
+    tier: networking
+    version: "1.0.0"
+    environment: production
+    framework: express
+    language: javascript
+    runtime: nodejs
+    ingress-type: http
+    route-type: path-based
+    
+  # Annotations provide configuration directives for ingress controllers
+  # Different ingress controllers support different annotation sets
+  # These annotations configure routing behavior, SSL, and other features
+  annotations:
+    # Ingress class specification (legacy annotation format)
+    # Modern approach uses spec.ingressClassName field
+    # Kept for compatibility with older ingress controllers
+    kubernetes.io/ingress.class: "nginx"
+    
+    # NGINX Ingress Controller specific annotations
+    # These annotations configure NGINX-specific routing and behavior
+    
+    # Rewrite target configuration for path manipulation
+    # Removes the matched path prefix when forwarding to backend
+    # Example: /hello request forwarded as /hello to backend service
+    nginx.ingress.kubernetes.io/rewrite-target: "/"
+    
+    # Use regex for path matching (enables advanced routing patterns)
+    # Allows for flexible path matching and rewriting capabilities
+    nginx.ingress.kubernetes.io/use-regex: "false"
+    
+    # SSL redirect configuration (disabled for tutorial simplicity)
+    # In production, should be enabled to enforce HTTPS
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    
+    # Backend protocol specification (HTTP for Node.js Express server)
+    # Tells ingress controller which protocol to use when connecting to backend
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    
+    # Connection and timeout configurations for reliability
+    # Configures upstream connection behavior for optimal performance
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
+    
+    # Request size limits for security and performance
+    # Prevents large request attacks and ensures reasonable resource usage
+    nginx.ingress.kubernetes.io/proxy-body-size: "1m"
+    
+    # Load balancing method configuration
+    # Round-robin is default and appropriate for stateless applications
+    nginx.ingress.kubernetes.io/load-balance: "round_robin"
+    
+    # Session affinity configuration (disabled for stateless app)
+    # Stateless tutorial application doesn't require session persistence
+    nginx.ingress.kubernetes.io/affinity: "none"
+    
+    # Rate limiting configuration (optional - disabled for tutorial)
+    # Can be enabled for production deployments to prevent abuse
+    # nginx.ingress.kubernetes.io/rate-limit-connections: "10"
+    # nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    
+    # CORS configuration (optional - can be enabled for browser access)
+    # Enables cross-origin resource sharing for web applications
+    # nginx.ingress.kubernetes.io/enable-cors: "true"
+    # nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    # nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, OPTIONS"
+    
+    # Educational and documentation annotations
+    # Provide metadata for learning and operational purposes
+    description: "Kubernetes Ingress for Node.js tutorial backend with path-based routing to /hello endpoint"
+    
+    # Educational metadata for learning purposes
+    tutorial.nodejs.io/purpose: "External HTTP access to Node.js tutorial backend via path-based routing"
+    tutorial.nodejs.io/level: "beginner"
+    tutorial.nodejs.io/framework: "express-5.1.0"
+    tutorial.nodejs.io/runtime: "nodejs-22.11.0-lts"
+    tutorial.nodejs.io/endpoint: "/hello"
+    tutorial.nodejs.io/method: "GET"
+    tutorial.nodejs.io/response: "Hello world"
+    tutorial.nodejs.io/ingress-controller: "nginx"
+    
+    # Network and routing configuration information
+    ingress.kubernetes.io/protocol: "HTTP"
+    ingress.kubernetes.io/path-type: "Prefix"
+    ingress.kubernetes.io/backend-service: "nodejs-tutorial-backend"
+    ingress.kubernetes.io/backend-port: "3000"
+    
+    # Integration and dependency information
+    ingress.kubernetes.io/depends-on: "service/nodejs-tutorial-backend"
+    ingress.kubernetes.io/integrates-with: "deployment/nodejs-tutorial-backend"
+    
+    # Contact and documentation information
+    contact: "nodejs-tutorial-authors@example.com"
+    documentation: "https://github.com/nodejs-tutorial/backend"
+    
+    # Operational metadata
+    ingress.kubernetes.io/created-by: "kubernetes-tutorial"
+    ingress.kubernetes.io/managed-by: "kubectl"
+    
+    # Traffic and routing metadata
+    ingress.kubernetes.io/traffic-type: "external-http"
+    ingress.kubernetes.io/routing-method: "path-based"
+    
+    # Monitoring and observability annotations
+    prometheus.io/scrape: "false"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "10254"
+    
+    # Security and compliance metadata
+    security.kubernetes.io/ingress-policy: "allow-external-http"
+    compliance.tutorial.io/approved: "true"
+
+# Ingress specification defining routing rules and backend configuration
+spec:
+  # Ingress class name specification (modern approach)
+  # Determines which ingress controller will handle this Ingress resource
+  # Must match an IngressClass resource installed in the cluster
+  ingressClassName: nginx
+  
+  # Default backend configuration (optional)
+  # Handles requests that don't match any rules
+  # Useful for providing default responses or error pages
+  # defaultBackend:
+  #   service:
+  #     name: default-backend
+  #     port:
+  #       number: 80
+  
+  # TLS configuration for HTTPS termination (optional - omitted for tutorial)
+  # Production deployments should include TLS configuration for security
+  # tls:
+  #   - hosts:
+  #       - nodejs-tutorial.example.com
+  #     secretName: nodejs-tutorial-tls
+  
+  # Routing rules define how incoming requests are routed to backend services
+  # Rules can be host-based, path-based, or combination of both
+  rules:
+    # Host-based routing rule (optional - omitted for flexibility)
+    # Specifying a host restricts access to that specific hostname
+    # Omitting host allows access via any hostname pointing to the ingress
+    # - host: nodejs-tutorial.local
+    #   http:
+    #     paths: [path definitions]
+    
+    # HTTP routing configuration for all hosts
+    # When no host is specified, rule applies to all incoming HTTP requests
+    - http:
+        # Path-based routing rules
+        # Define how different URL paths are routed to backend services
+        paths:
+          # Primary routing rule for /hello endpoint
+          - path: /hello
+            # Path type determines how the path is matched
+            # Prefix: Matches URL paths starting with the specified path
+            # Exact: Matches URL paths exactly as specified
+            # ImplementationSpecific: Depends on ingress controller implementation
+            pathType: Prefix
+            
+            # Backend service configuration
+            # Defines which service and port to route matching requests to
+            backend:
+              # Service specification
+              service:
+                # Service name - must match the name of an existing Service resource
+                # This creates the integration between Ingress and Service
+                name: nodejs-tutorial-backend
+                
+                # Service port specification
+                # Can specify port by number or by name (if service defines named ports)
+                port:
+                  # Port number - must match a port exposed by the target service
+                  # This is the service port, not the container/target port
+                  number: 3000
+                  
+                  # Alternative: named port reference (if service defines named ports)
+                  # name: http  # References service port name instead of number
+          
+          # Additional routing rules for extensibility (optional examples)
+          # These demonstrate how to add more endpoints in the future
+          
+          # Health check endpoint (if implemented in the application)
+          # - path: /health
+          #   pathType: Exact
+          #   backend:
+          #     service:
+          #       name: nodejs-tutorial-backend
+          #       port:
+          #         number: 3000
+          
+          # Metrics endpoint for monitoring (if implemented)
+          # - path: /metrics
+          #   pathType: Exact
+          #   backend:
+          #     service:
+          #       name: nodejs-tutorial-backend
+          #       port:
+          #         number: 3000
+          
+          # API versioning example (for future expansion)
+          # - path: /api/v1/hello
+          #   pathType: Prefix
+          #   backend:
+          #     service:
+          #       name: nodejs-tutorial-backend
+          #       port:
+          #         number: 3000
+          
+          # Static content routing (if serving static files)
+          # - path: /static
+          #   pathType: Prefix
+          #   backend:
+          #     service:
+          #       name: nodejs-tutorial-static
+          #       port:
+          #         number: 80
+          
+          # Catch-all route for unmatched paths (optional)
+          # Routes all other requests to a default handler
+          # Should be placed last in the path list due to precedence rules
+          # - path: /
+          #   pathType: Prefix
+          #   backend:
+          #     service:
+          #       name: nodejs-tutorial-backend
+          #       port:
+          #         number: 3000
+
+# =============================================================================
+# INGRESS ROUTING AND PATH MATCHING BEHAVIOR
+# =============================================================================
+#
+# PATH MATCHING RULES:
+# The Ingress controller evaluates path rules in order and uses the first match
+# for routing decisions. Path matching behavior depends on pathType:
+#
+# PREFIX MATCHING:
+# - path: /hello matches:
+#   ✓ /hello
+#   ✓ /hello/
+#   ✓ /hello/world
+#   ✓ /hello?param=value
+#   ✗ /hell
+#   ✗ /hellos
+#
+# EXACT MATCHING:
+# - path: /hello with pathType: Exact matches:
+#   ✓ /hello
+#   ✓ /hello/
+#   ✗ /hello/world
+#   ✗ /hello?param=value
+#
+# PRECEDENCE RULES:
+# 1. Exact matches take precedence over prefix matches
+# 2. Longer prefix matches take precedence over shorter ones
+# 3. Host-specific rules take precedence over generic rules
+#
+# =============================================================================
+# INGRESS CONTROLLER INTEGRATION AND COMPATIBILITY
+# =============================================================================
+#
+# NGINX INGRESS CONTROLLER:
+# This Ingress is optimized for NGINX Ingress Controller but can be adapted
+# for other controllers by modifying annotations and configuration.
+#
+# CONTROLLER-SPECIFIC ANNOTATIONS:
+# - nginx.ingress.kubernetes.io/*: NGINX-specific configuration
+# - traefik.ingress.kubernetes.io/*: Traefik-specific configuration
+# - alb.ingress.kubernetes.io/*: AWS ALB-specific configuration
+# - kubernetes.io/ingress.class: Legacy controller selection
+#
+# ALTERNATIVE INGRESS CONTROLLERS:
+#
+# TRAEFIK INGRESS CONTROLLER:
+# spec.ingressClassName: traefik
+# annotations:
+#   traefik.ingress.kubernetes.io/router.rule: "Path(`/hello`)"
+#
+# ISTIO GATEWAY:
+# Uses Gateway and VirtualService resources instead of Ingress
+# Provides advanced traffic management and security features
+#
+# CLOUD PROVIDER CONTROLLERS:
+# - AWS ALB Ingress Controller
+# - Google Cloud Load Balancer
+# - Azure Application Gateway
+#
+# =============================================================================
+# TRAFFIC FLOW AND REQUEST PROCESSING
+# =============================================================================
+#
+# COMPLETE REQUEST FLOW:
+# External Client → DNS Resolution → Load Balancer → Ingress Controller 
+#                                                      ↓
+# Backend Pod ← Service Load Balancer ← Service Discovery ← Ingress Rules
+#      ↓              ↓                      ↓                   ↓
+# HTTP Response ← Pod Processing ← Request Routing ← Path Matching
+#
+# REQUEST PROCESSING STEPS:
+# 1. Client sends HTTP request to ingress endpoint
+# 2. DNS resolves ingress hostname to load balancer IP
+# 3. Load balancer forwards request to ingress controller pod
+# 4. Ingress controller evaluates routing rules and annotations
+# 5. Controller matches request path against configured rules
+# 6. Controller forwards request to target service endpoint
+# 7. Service load balances request to healthy backend pod
+# 8. Pod processes request and generates HTTP response
+# 9. Response flows back through the same path to client
+#
+# LOAD BALANCING LAYERS:
+# - External Load Balancer: Distributes traffic to ingress controller pods
+# - Ingress Controller: Routes traffic based on rules and annotations  
+# - Service Load Balancer: Distributes traffic to backend pods
+# - Pod Load Balancing: Multiple replicas handle concurrent requests
+#
+# =============================================================================
+# OPERATIONAL COMMANDS AND MANAGEMENT
+# =============================================================================
+#
+# INGRESS MANAGEMENT COMMANDS:
+#
+# Create Ingress:
+# kubectl apply -f infrastructure/kubernetes/ingress.yaml
+#
+# Verify Ingress Status:
+# kubectl get ingress nodejs-tutorial-backend
+# kubectl describe ingress nodejs-tutorial-backend
+#
+# Check Ingress Controller Logs:
+# kubectl logs -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx
+#
+# Test External Access:
+# curl http://<ingress-ip>/hello
+# curl -H "Host: nodejs-tutorial.local" http://<ingress-ip>/hello
+#
+# Port Forward for Testing:
+# kubectl port-forward service/ingress-nginx-controller -n ingress-nginx 8080:80
+# curl http://localhost:8080/hello
+#
+# Get Ingress External IP:
+# kubectl get ingress nodejs-tutorial-backend -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+#
+# Delete Ingress:
+# kubectl delete ingress nodejs-tutorial-backend
+#
+# TROUBLESHOOTING COMMANDS:
+#
+# Check Ingress Configuration:
+# kubectl get ingress nodejs-tutorial-backend -o yaml
+# kubectl describe ingress nodejs-tutorial-backend
+#
+# Verify Backend Service:
+# kubectl get service nodejs-tutorial-backend
+# kubectl get endpoints nodejs-tutorial-backend
+#
+# Check Ingress Controller Status:
+# kubectl get pods -n ingress-nginx
+# kubectl describe pod -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx
+#
+# View Ingress Controller Configuration:
+# kubectl exec -n ingress-nginx -it <controller-pod> -- cat /etc/nginx/nginx.conf
+#
+# Test Backend Connectivity:
+# kubectl run test-pod --image=curlimages/curl -it --rm -- curl http://nodejs-tutorial-backend:3000/hello
+#
+# Monitor Ingress Events:
+# kubectl get events --field-selector involvedObject.name=nodejs-tutorial-backend
+#
+# Check DNS Resolution:
+# nslookup <ingress-hostname>
+# dig <ingress-hostname>
+#
+# =============================================================================
+# SECURITY CONSIDERATIONS AND BEST PRACTICES
+# =============================================================================
+#
+# NETWORK SECURITY:
+# - Use TLS/HTTPS in production environments for encrypted communication
+# - Implement proper certificate management with cert-manager or similar
+# - Configure appropriate CORS policies for browser-based applications
+# - Use network policies to restrict ingress controller access
+#
+# ACCESS CONTROL:
+# - Implement authentication and authorization at ingress level
+# - Use OAuth2 proxy or similar for centralized authentication
+# - Configure rate limiting to prevent abuse and DoS attacks
+# - Monitor and log all access attempts for security analysis
+#
+# INPUT VALIDATION:
+# - Configure request size limits to prevent large payload attacks
+# - Implement request timeout configurations to prevent slow attacks
+# - Validate HTTP methods and headers at ingress level
+# - Use ModSecurity or similar WAF for advanced protection
+#
+# SSL/TLS CONFIGURATION:
+# - Use strong cipher suites and disable weak protocols
+# - Implement HSTS headers for browser security
+# - Configure proper certificate validation and rotation
+# - Use TLS 1.2 or higher for all encrypted communications
+#
+# MONITORING AND ALERTING:
+# - Monitor ingress controller metrics and logs
+# - Set up alerts for configuration changes and errors
+# - Track request rates, response times, and error rates
+# - Implement proper log aggregation and analysis
+#
+# =============================================================================
+# PERFORMANCE OPTIMIZATION AND SCALING
+# =============================================================================
+#
+# INGRESS CONTROLLER SCALING:
+# - Run multiple ingress controller replicas for high availability
+# - Use node affinity to distribute controllers across nodes
+# - Configure proper resource requests and limits
+# - Monitor CPU and memory usage patterns
+#
+# CACHING AND OPTIMIZATION:
+# - Configure appropriate caching headers in backend application
+# - Use CDN for static content delivery when applicable
+# - Implement connection pooling and keep-alive settings
+# - Configure gzip compression for response optimization
+#
+# LOAD BALANCING OPTIMIZATION:
+# - Choose appropriate load balancing algorithms
+# - Configure session affinity when required by application
+# - Implement proper health checks and readiness probes
+# - Monitor backend response times and error rates
+#
+# TRAFFIC MANAGEMENT:
+# - Configure rate limiting based on traffic patterns
+# - Implement circuit breakers for backend protection
+# - Use canary deployments for safe rollouts
+# - Configure proper timeout values for all components
+#
+# =============================================================================
+# EDUCATIONAL NOTES FOR KUBERNETES LEARNING
+# =============================================================================
+#
+# KEY CONCEPTS DEMONSTRATED:
+#
+# 1. EXTERNAL ACCESS PATTERNS:
+#    - Ingress provides layer 7 (HTTP/HTTPS) external access to services
+#    - Complements NodePort and LoadBalancer service types
+#    - Enables path-based and host-based routing capabilities
+#
+# 2. INGRESS CONTROLLER ARCHITECTURE:
+#    - Ingress resources define routing rules declaratively
+#    - Ingress controllers implement the actual routing logic
+#    - Controllers can be NGINX, Traefik, AWS ALB, GCP LB, etc.
+#
+# 3. PATH-BASED ROUTING:
+#    - Single external endpoint can route to multiple backend services
+#    - Flexible path matching with Prefix, Exact, and Regex options
+#    - Enables microservices architecture with unified external interface
+#
+# 4. SERVICE INTEGRATION:
+#    - Ingress routes traffic to Service resources, not directly to pods
+#    - Maintains abstraction layers: Ingress → Service → Pods
+#    - Enables independent scaling and management of each layer
+#
+# 5. PRODUCTION READINESS:
+#    - Comprehensive annotation support for advanced features
+#    - TLS termination and certificate management capabilities
+#    - Integration with monitoring, logging, and security systems
+#
+# 6. CLOUD NATIVE PATTERNS:
+#    - Declarative configuration management
+#    - Infrastructure as Code principles
+#    - GitOps-compatible resource definitions
+#
+# =============================================================================
+# INTEGRATION WITH TUTORIAL APPLICATION STACK
+# =============================================================================
+#
+# COMPLETE KUBERNETES STACK INTEGRATION:
+#
+# DEPLOYMENT LAYER:
+# - Manages Node.js application pods and container lifecycle
+# - Provides replica scaling and rolling update capabilities  
+# - Configures resource limits and health checks
+#
+# SERVICE LAYER:
+# - Exposes deployment pods as stable network endpoints
+# - Provides load balancing and service discovery
+# - Enables communication between ingress and backend pods
+#
+# INGRESS LAYER:
+# - Exposes services to external HTTP/HTTPS traffic
+# - Implements path-based routing and traffic management
+# - Provides entry point for external clients
+#
+# NETWORKING FLOW:
+# External Client → Ingress Controller → Service → Backend Pods
+#                     ↓                   ↓           ↓
+#                 HTTP Routing        Load Balance   Node.js App
+#                 SSL Termination     Service Disc.  Express.js
+#                 Path Matching       Health Checks  /hello Route
+#
+# EDUCATIONAL PROGRESSION:
+# 1. Learn Deployment basics (pod management)
+# 2. Understand Service networking (internal access)
+# 3. Master Ingress routing (external access)
+# 4. Integrate all layers for complete application stack
+#
+# =============================================================================

@@ -1,0 +1,35 @@
+# Node.js Dependencies
+node_modules/
+
+# Test Coverage Reports
+coverage/
+.nyc_output/
+
+# Test Output and Results
+test-results/
+reports/
+
+# Build Artifacts
+dist/
+*.tsbuildinfo
+
+# Temporary Files
+*.tmp
+*.temp
+
+# Log Files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor Swap Files
+*.swp
+*.swo
+
+# Operating System Files
+.DS_Store
+
+# Environment Files
+*.env
+*.local

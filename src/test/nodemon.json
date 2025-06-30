@@ -1,0 +1,24 @@
+{
+  "watch": [
+    "src/test/unit/",
+    "src/test/integration/",
+    "src/test/helpers/",
+    "src/test/fixtures/",
+    "src/backend/",
+    "src/backend/utils/",
+    "src/backend/middleware/",
+    "src/backend/routes/"
+  ],
+  "ext": "js,json,ts",
+  "ignore": [
+    "node_modules/",
+    "coverage/",
+    "src/backend/.env",
+    "src/backend/.env.example"
+  ],
+  "exec": "npm test",
+  "env": {
+    "NODE_ENV": "test"
+  },
+  "delay": "200"
+}

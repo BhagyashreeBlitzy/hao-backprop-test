@@ -1,39 +1,65 @@
 ---
-name: Bug Report
-about: Report a bug or issue with the Node.js Hello World application
-title: '[BUG] '
-labels: ['bug']
-assignees: []
+name: Bug report
+about: Create a report to help us improve
+labels: bug, triage
 ---
 
-## Description
+### Describe the bug
 A clear and concise description of what the bug is.
 
-## Steps To Reproduce
+### To Reproduce
 Steps to reproduce the behavior:
-1. Make a request to '...'
-2. Using method '...'
-3. With headers '...'
+1. Go to '...'
+2. Run '...'
+3. Click on '...'
 4. See error
 
-## Expected Behavior
+### Expected behavior
 A clear and concise description of what you expected to happen.
 
-## Actual Behavior
-A clear and concise description of what actually happened, including any error messages, status codes, or unexpected responses.
+### Actual behavior
+A clear and concise description of what actually happened.
 
-## Environment
-- **Node.js Version**: e.g., 18.15.0
-- **npm Version**: e.g., 9.5.0
-- **Operating System**: e.g., Windows 10, macOS Monterey, Ubuntu 22.04
-- **Deployment Environment**: e.g., Local, Docker, Heroku
-- **Client/Tool Used**: e.g., curl, Postman, browser (specify which one)
+### Environment
+Please complete the following information:
+- OS: [e.g. Ubuntu 22.04, Windows 11, macOS 14.1]
+- Node.js version: [e.g. 22.11.0] (run `node --version`)
+- Express version: [e.g. 5.1.0] (check `package.json`)
+- npm version: [e.g. 10.2.4] (run `npm --version`)
+- Browser [if applicable]: [e.g. Chrome 120, Safari 17]
+- Other relevant dependencies: [list any other relevant packages]
 
-## Logs
-If applicable, add server logs or client-side error messages to help explain your problem (please use code blocks ```...``` for formatting).
+### Logs, error messages, or stack traces
+```
+Paste any relevant logs, error output, or stack traces here.
+Use code blocks to preserve formatting.
+```
 
-## Possible Solution
-If you have suggestions on how to fix the issue or have identified the source of the problem, please describe it here.
+### Additional context
+Add any other context about the problem here, including screenshots if applicable.
 
-## Additional Context
-Add any other context about the problem here, such as when it started occurring, if it happens intermittently, or any other details that might be helpful.
+### Related issues
+Reference any related issues or pull requests (e.g., "Related to #123").
+
+---
+
+### For Maintainers (Please ignore this section when reporting bugs)
+
+**Triage Checklist:**
+- [ ] Bug report contains sufficient information for reproduction
+- [ ] Environment details are complete and accurate
+- [ ] Issue is not a duplicate of existing reports
+- [ ] Bug affects the core tutorial application functionality
+- [ ] Severity and priority assessment completed
+
+**Additional Notes:**
+- Check [CONTRIBUTING.md](../../CONTRIBUTING.md) for detailed bug reporting guidelines
+- Review [README.md](../../README.md) for setup and troubleshooting information
+- Ensure the issue relates to the Node.js tutorial application with Express.js v5.1.0
+
+**Quick Debugging Steps:**
+1. Verify Node.js version compatibility (v18+ required, v22.x LTS recommended)
+2. Check that all dependencies are installed (`npm install`)
+3. Confirm server starts successfully (`npm start` or `npm run dev`)
+4. Test the `/hello` endpoint with `curl http://localhost:3000/hello`
+5. Review application logs for error details
