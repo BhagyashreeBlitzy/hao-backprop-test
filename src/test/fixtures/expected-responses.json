@@ -1,0 +1,171 @@
+{
+  "hello_success": {
+    "status": 200,
+    "headers": {
+      "content-type": "text/plain; charset=utf-8"
+    },
+    "body": "Hello world",
+    "description": "Successful response for GET /hello endpoint returning the canonical 'Hello world' message",
+    "testScenario": "successful_hello_endpoint_response",
+    "correspondingRequest": "hello_get_request",
+    "educationalPurpose": "Demonstrates basic HTTP 200 success response with plain text content type"
+  },
+  "not_found_error": {
+    "status": 404,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "error": "Not Found",
+      "message": "The requested resource was not found"
+    },
+    "description": "Standard 404 Not Found error response for requests to non-existent endpoints",
+    "testScenario": "not_found_error_response",
+    "correspondingRequest": "not_found_request",
+    "educationalPurpose": "Demonstrates proper HTTP 404 error handling with JSON error structure"
+  },
+  "internal_server_error": {
+    "status": 500,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "error": "Internal Server Error",
+      "message": "An unexpected error occurred"
+    },
+    "description": "Standard 500 Internal Server Error response for unexpected server failures",
+    "testScenario": "internal_server_error_response",
+    "correspondingRequest": "internal_error_request",
+    "educationalPurpose": "Demonstrates proper HTTP 500 error handling with sanitized error messages"
+  },
+  "method_not_allowed_error": {
+    "status": 405,
+    "headers": {
+      "content-type": "application/json; charset=utf-8",
+      "allow": "GET"
+    },
+    "body": {
+      "error": "Method Not Allowed",
+      "message": "The requested method is not allowed for this resource"
+    },
+    "description": "HTTP 405 Method Not Allowed response for unsupported HTTP methods on /hello endpoint",
+    "testScenario": "method_not_allowed_error_response",
+    "correspondingRequest": "hello_post_request",
+    "educationalPurpose": "Demonstrates HTTP method validation and proper Allow header usage"
+  },
+  "bad_request_error": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "error": "Bad Request",
+      "message": "The request is malformed or invalid"
+    },
+    "description": "HTTP 400 Bad Request response for malformed or invalid requests",
+    "testScenario": "bad_request_error_response",
+    "correspondingRequest": "malformed_request",
+    "educationalPurpose": "Demonstrates input validation and security best practices"
+  },
+  "request_header_fields_too_large_error": {
+    "status": 431,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "error": "Request Header Fields Too Large",
+      "message": "The request header fields are too large"
+    },
+    "description": "HTTP 431 Request Header Fields Too Large response for oversized headers",
+    "testScenario": "request_header_fields_too_large_response",
+    "correspondingRequest": "large_header_request",
+    "educationalPurpose": "Demonstrates HTTP header size limits and security considerations"
+  },
+  "request_timeout_error": {
+    "status": 408,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "error": "Request Timeout",
+      "message": "The server timed out waiting for the request"
+    },
+    "description": "HTTP 408 Request Timeout response for requests that exceed timeout limits",
+    "testScenario": "request_timeout_error_response",
+    "correspondingRequest": "timeout_simulation_request",
+    "educationalPurpose": "Demonstrates timeout handling and server performance considerations"
+  },
+  "cors_preflight_success": {
+    "status": 200,
+    "headers": {
+      "content-type": "text/plain; charset=utf-8",
+      "access-control-allow-origin": "*",
+      "access-control-allow-methods": "GET, OPTIONS",
+      "access-control-allow-headers": "content-type, accept",
+      "access-control-max-age": "86400"
+    },
+    "body": "",
+    "description": "Successful CORS preflight response allowing cross-origin requests",
+    "testScenario": "cors_preflight_success_response",
+    "correspondingRequest": "cors_preflight_request",
+    "educationalPurpose": "Demonstrates CORS preflight handling and cross-origin security"
+  },
+  "response_metadata": {
+    "version": "1.0.0",
+    "description": "Expected HTTP response objects for Node.js tutorial application testing",
+    "created": "2024-01-01T00:00:00.000Z",
+    "lastModified": "2024-01-01T00:00:00.000Z",
+    "author": "Node.js Tutorial Development Team",
+    "license": "MIT",
+    "compatibility": {
+      "nodejs": ">=18.0.0",
+      "express": ">=5.1.0",
+      "http": "1.1"
+    },
+    "testFramework": "Jest",
+    "usage": "Import this fixture in test files to assert expected HTTP responses",
+    "notes": [
+      "All response objects follow HTTP/1.1 specification standards",
+      "Status codes align with RFC 7231 HTTP semantics and content standards",
+      "Headers include charset specifications for proper content encoding",
+      "Error responses use consistent JSON structure for API uniformity",
+      "Success responses match the application's documented API contract",
+      "Educational purpose annotations explain HTTP concepts and best practices",
+      "Response structures support both unit and integration testing scenarios",
+      "All responses are designed for educational clarity and maintainability",
+      "Security considerations are reflected in error message sanitization"
+    ]
+  },
+  "constants": {
+    "HTTP_STATUS_CODES": {
+      "OK": 200,
+      "BAD_REQUEST": 400,
+      "NOT_FOUND": 404,
+      "METHOD_NOT_ALLOWED": 405,
+      "REQUEST_TIMEOUT": 408,
+      "REQUEST_HEADER_FIELDS_TOO_LARGE": 431,
+      "INTERNAL_SERVER_ERROR": 500
+    },
+    "CONTENT_TYPES": {
+      "TEXT_PLAIN": "text/plain; charset=utf-8",
+      "APPLICATION_JSON": "application/json; charset=utf-8"
+    },
+    "ERROR_MESSAGES": {
+      "NOT_FOUND": "The requested resource was not found",
+      "INTERNAL_ERROR": "An unexpected error occurred",
+      "METHOD_NOT_ALLOWED": "The requested method is not allowed for this resource",
+      "BAD_REQUEST": "The request is malformed or invalid",
+      "REQUEST_TIMEOUT": "The server timed out waiting for the request",
+      "HEADER_TOO_LARGE": "The request header fields are too large"
+    },
+    "SUCCESS_MESSAGES": {
+      "HELLO_WORLD": "Hello world"
+    },
+    "CORS_HEADERS": {
+      "ALLOW_ORIGIN": "access-control-allow-origin",
+      "ALLOW_METHODS": "access-control-allow-methods",
+      "ALLOW_HEADERS": "access-control-allow-headers",
+      "MAX_AGE": "access-control-max-age"
+    }
+  }
+}
