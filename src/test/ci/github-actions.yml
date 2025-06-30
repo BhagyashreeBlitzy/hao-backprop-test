@@ -1,0 +1,344 @@
+# GitHub Actions CI/CD Workflow for Node.js Tutorial Application Test Suite
+# 
+# This workflow implements comprehensive continuous integration for the test layer,
+# orchestrating dependency installation, code linting, test execution, coverage
+# collection, and artifact upload. It ensures all code changes are validated in
+# a reproducible environment with strict quality gates.
+#
+# Educational Objectives:
+# - Demonstrate modern CI/CD practices for Node.js applications
+# - Show integration of testing, linting, and coverage enforcement
+# - Provide clear feedback for maintainability and educational clarity
+# - Establish production-ready DevOps patterns for learning
+#
+# Technical Integration:
+# - Integrates with jest.config.ts for test configuration and coverage thresholds
+# - Uses Node.js v22.x LTS for consistent runtime environment
+# - Implements Helmet.js security headers recommendations
+# - Follows Express.js v5.1.0 best practices for testing
+#
+# @fileoverview Automated CI pipeline for Node.js tutorial test validation
+# @author Node.js Tutorial Team
+# @version 1.0.0
+# @requires Node.js v22.x
+# @requires npm (bundled with Node.js)
+
+name: Node.js Tutorial Test Suite CI
+
+# Workflow Triggers
+# Configured to run on push and pull request events to the main branch,
+# ensuring all code changes are validated before integration
+on:
+  push:
+    branches: 
+      - main
+    paths:
+      - 'src/test/**'
+      - 'src/**/*.js'
+      - 'src/**/*.ts'
+      - 'package*.json'
+      - '.eslintrc.*'
+      - 'jest.config.*'
+  pull_request:
+    branches: 
+      - main
+    paths:
+      - 'src/test/**'
+      - 'src/**/*.js'
+      - 'src/**/*.ts'
+      - 'package*.json'
+      - '.eslintrc.*'
+      - 'jest.config.*'
+  workflow_dispatch:
+    # Allows manual triggering for testing and debugging purposes
+
+# Workflow Jobs Configuration
+jobs:
+  # Main build and test job implementing comprehensive CI pipeline
+  build-and-test:
+    name: Build, Test, and Validate
+    runs-on: ubuntu-latest
+    
+    # Environment variables for consistent test execution
+    env:
+      NODE_ENV: test
+      CI: true
+      FORCE_COLOR: 1
+    
+    # Job execution steps implementing educational CI/CD best practices
+    steps:
+      # Step 1: Repository Checkout
+      # Uses actions/checkout@v4 for secure and efficient code retrieval
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+        with:
+          # Fetch full history for potential dependency analysis
+          fetch-depth: 0
+          # Ensure clean checkout for reproducible builds
+          clean: true
+      
+      # Step 2: Node.js Environment Setup
+      # Configures Node.js v22.x LTS with npm caching for performance
+      - name: Set up Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          # Use Node.js v22.x LTS as specified in technical requirements
+          node-version: '22.x'
+          # Enable npm cache for faster dependency installation
+          cache: 'npm'
+          # Set cache dependency path for test directory
+          cache-dependency-path: 'src/test/package-lock.json'
+          # Use official Node.js registry
+          registry-url: 'https://registry.npmjs.org'
+      
+      # Step 3: Node.js and npm Version Verification
+      # Ensures correct runtime environment for educational clarity
+      - name: Verify Node.js and npm versions
+        run: |
+          echo "Node.js version: $(node --version)"
+          echo "npm version: $(npm --version)"
+          echo "Platform: $(uname -a)"
+          echo "Working directory: $(pwd)"
+        
+      # Step 4: Dependency Installation
+      # Uses npm ci for clean, reproducible dependency installation
+      - name: Install test dependencies
+        working-directory: src/test
+        run: |
+          # Use npm ci for production-grade, reproducible installs
+          npm ci --prefer-offline --no-audit
+          # Verify installation success
+          npm list --depth=0
+        env:
+          # Optimize npm for CI environment
+          NPM_CONFIG_PROGRESS: false
+          NPM_CONFIG_LOGLEVEL: warn
+      
+      # Step 5: Code Quality - ESLint
+      # Enforces code style and catches errors for educational clarity
+      - name: Run ESLint code quality checks
+        working-directory: src/test
+        run: |
+          echo "Running ESLint with project configuration..."
+          npm run lint
+          echo "ESLint completed successfully"
+      
+      # Step 6: Security Audit
+      # Checks for known vulnerabilities in dependencies
+      - name: Run npm security audit
+        working-directory: src/test
+        run: |
+          echo "Running npm security audit..."
+          npm audit --audit-level=moderate
+          echo "Security audit completed"
+        # Continue on audit warnings but fail on critical issues
+        continue-on-error: false
+      
+      # Step 7: Unit Tests Execution
+      # Runs Jest unit tests with comprehensive coverage reporting
+      - name: Execute unit tests with coverage
+        working-directory: src/test
+        run: |
+          echo "Starting Jest test execution with coverage..."
+          npm run test:coverage
+          echo "All tests completed successfully"
+        env:
+          # Jest configuration for CI environment
+          JEST_JUNIT_OUTPUT_DIR: ./test-results
+          JEST_JUNIT_OUTPUT_NAME: junit.xml
+      
+      # Step 8: Integration Tests Execution
+      # Runs integration tests for HTTP endpoints and middleware
+      - name: Execute integration tests
+        working-directory: src/test
+        run: |
+          echo "Running integration tests..."
+          npm run test:integration
+          echo "Integration tests completed successfully"
+        # Set longer timeout for integration tests
+        timeout-minutes: 5
+      
+      # Step 9: Performance Tests (if available)
+      # Validates response time requirements
+      - name: Execute performance validation
+        working-directory: src/test
+        run: |
+          echo "Running performance validation tests..."
+          # Run performance tests if script exists
+          if npm run --silent 2>/dev/null | grep -q "test:performance"; then
+            npm run test:performance
+            echo "Performance tests completed"
+          else
+            echo "Performance tests not configured, skipping..."
+          fi
+        continue-on-error: true
+      
+      # Step 10: Coverage Threshold Validation
+      # Enforces coverage requirements from jest.config.ts
+      - name: Validate coverage thresholds
+        working-directory: src/test
+        run: |
+          echo "Validating coverage meets required thresholds..."
+          # Coverage validation is handled by Jest configuration
+          # This step provides explicit confirmation
+          if [ -f coverage/coverage-summary.json ]; then
+            echo "Coverage summary generated successfully"
+            # Display coverage summary for transparency
+            cat coverage/coverage-summary.json | jq '.total'
+          else
+            echo "Coverage summary not found"
+            exit 1
+          fi
+      
+      # Step 11: Test Results Upload
+      # Uploads test results as workflow artifacts for inspection
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ github.run_number }}
+          path: |
+            src/test/test-results/
+            src/test/coverage/
+            src/test/junit.xml
+          retention-days: 30
+          if-no-files-found: warn
+      
+      # Step 12: Coverage Report Upload
+      # Uploads detailed coverage reports for analysis
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ github.run_number }}
+          path: |
+            src/test/coverage/
+            src/test/coverage/lcov.info
+            src/test/coverage/coverage-final.json
+          retention-days: 30
+          if-no-files-found: warn
+      
+      # Step 13: ESLint Report Upload
+      # Uploads linting results for quality analysis
+      - name: Upload ESLint results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eslint-report-${{ github.run_number }}
+          path: |
+            src/test/eslint-report.json
+            src/test/eslint-report.html
+          retention-days: 15
+          if-no-files-found: ignore
+      
+      # Step 14: Build Artifact Creation
+      # Creates deployment-ready artifacts for educational purposes
+      - name: Create build artifacts
+        working-directory: src/test
+        run: |
+          echo "Creating build information..."
+          # Create build metadata
+          cat > build-info.json << EOF
+          {
+            "buildNumber": "${{ github.run_number }}",
+            "commitSha": "${{ github.sha }}",
+            "commitRef": "${{ github.ref }}",
+            "buildDate": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "nodeVersion": "$(node --version)",
+            "npmVersion": "$(npm --version)",
+            "testsPassed": true
+          }
+          EOF
+          echo "Build metadata created"
+      
+      # Step 15: Build Metadata Upload
+      # Uploads build information for traceability
+      - name: Upload build metadata
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-metadata-${{ github.run_number }}
+          path: src/test/build-info.json
+          retention-days: 90
+      
+      # Step 16: Success Notification
+      # Provides clear success confirmation for educational feedback
+      - name: CI Pipeline Success Confirmation
+        run: |
+          echo "=========================================="
+          echo "✅ CI Pipeline Completed Successfully!"
+          echo "=========================================="
+          echo "Summary:"
+          echo "- Code quality checks: PASSED"
+          echo "- Security audit: PASSED"
+          echo "- Unit tests: PASSED"
+          echo "- Integration tests: PASSED"
+          echo "- Coverage thresholds: MET"
+          echo "- All artifacts uploaded: SUCCESS"
+          echo "=========================================="
+          echo "Build Number: ${{ github.run_number }}"
+          echo "Commit SHA: ${{ github.sha }}"
+          echo "Workflow URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo "=========================================="
+
+  # Quality Gate Job - Parallel execution for efficiency
+  quality-gates:
+    name: Quality Gates Validation
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: always()
+    
+    steps:
+      # Download artifacts for quality gate analysis
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-${{ github.run_number }}'
+          merge-multiple: true
+      
+      # Comprehensive quality gate validation
+      - name: Validate quality gates
+        run: |
+          echo "Validating quality gates..."
+          
+          # Check if build metadata exists
+          if [ -f build-info.json ]; then
+            echo "✅ Build completed successfully"
+            cat build-info.json | jq '.'
+          else
+            echo "❌ Build metadata missing"
+            exit 1
+          fi
+          
+          # Validate coverage files exist
+          if [ -d coverage ]; then
+            echo "✅ Coverage reports generated"
+            if [ -f coverage/coverage-summary.json ]; then
+              echo "Coverage summary available"
+            fi
+          else
+            echo "⚠️  Coverage reports not found"
+          fi
+          
+          # Check test results
+          if [ -d test-results ]; then
+            echo "✅ Test results available"
+          else
+            echo "⚠️  Test results not found"
+          fi
+          
+          echo "Quality gates validation completed"
+
+# Workflow Concurrency Control
+# Prevents concurrent runs on the same branch to avoid resource conflicts
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Workflow Permissions
+# Minimal permissions following security best practices
+permissions:
+  contents: read
+  actions: read
+  checks: write
+  pull-requests: write
