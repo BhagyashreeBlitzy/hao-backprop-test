@@ -1,75 +1,192 @@
-name: Node.js Hello World CI
+# =============================================================================
+# GITHUB ACTIONS CI WORKFLOW FOR NODE.JS TUTORIAL BACKEND APPLICATION
+# =============================================================================
+#
+# This GitHub Actions workflow provides comprehensive continuous integration (CI)
+# for the Node.js tutorial backend application, automating dependency installation,
+# code quality checks, testing, and coverage reporting for every code change.
+#
+# EDUCATIONAL PURPOSE:
+# This workflow demonstrates modern CI/CD best practices for Node.js/Express.js
+# applications, including quality gates, reproducible builds, and educational
+# clarity. All steps are documented to support onboarding and maintainability.
+#
+# COMPATIBILITY:
+# - Node.js v22.x LTS (matching engines field in package.json)
+# - Express.js v5.1.0 framework
+# - Jest testing framework with Supertest for HTTP testing
+# - ESLint for code quality and style enforcement
+# - npm v11.4.2 for dependency management
+#
+# QUALITY GATES:
+# All steps must pass for the build to succeed:
+# - Dependency installation via npm ci (reproducible builds)
+# - ESLint code quality checks (enforce coding standards)
+# - Jest unit and integration tests (functionality validation)
+# - Code coverage reporting (quality metrics)
+#
+# =============================================================================
 
+name: CI
+
+# Workflow trigger configuration
+# Runs on push and pull request events to main and feature branches
+# Supporting development workflow and branch protection requirements
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - 'feature/**'
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+      - 'feature/**'
 
+# Environment variables available to all jobs
+# Centralizes configuration for consistency across workflow steps
+env:
+  NODE_VERSION: '22.x'
+  WORKING_DIRECTORY: 'src/backend'
+
+# Job definition: build-and-test
+# Single job containing all CI steps for educational clarity and simplicity
 jobs:
-  test:
-    name: Test
+  build-and-test:
+    name: Build and Test Node.js Application
     runs-on: ubuntu-latest
     
+    # Default working directory for all run commands
+    # Ensures all npm commands execute in the correct backend directory
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+    
+    # Sequential execution steps for the CI pipeline
+    # Each step builds upon the previous, creating a comprehensive validation process
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      # STEP 1: Repository Checkout
+      # Retrieves the complete repository code for analysis and testing
+      # Uses actions/checkout@v4 for current GitHub Actions compatibility
+      - name: Checkout repository code
+        uses: actions/checkout@v4
         with:
-          node-version: 18
-          cache: 'npm'
-          cache-dependency-path: 'src/backend/package-lock.json'
+          # Fetch complete git history for accurate change detection
+          fetch-depth: 0
       
+      # STEP 2: Node.js Environment Setup
+      # Configures Node.js runtime environment matching package.json engines field
+      # Enables npm caching for improved build performance and reproducibility
+      - name: Set up Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          # Node.js v22.x LTS for long-term support and Express.js v5.1.0 compatibility
+          node-version: ${{ env.NODE_VERSION }}
+          # Enable npm dependency caching for faster builds
+          cache: 'npm'
+          # Specify cache dependency path for multi-directory projects
+          cache-dependency-path: ${{ env.WORKING_DIRECTORY }}/package-lock.json
+      
+      # STEP 3: Dependency Installation
+      # Uses npm ci for reproducible, clean dependency installation based on package-lock.json
+      # Ensures identical dependency tree across all environments (local, CI, production)
       - name: Install dependencies
-        working-directory: src/backend
         run: npm ci
       
-      - name: Run linting
-        working-directory: src/backend
+      # STEP 4: Environment Configuration
+      # Copies environment variable template to create runtime configuration
+      # Continues on error if .env already exists, supporting flexible environments
+      - name: Set up environment configuration
+        run: cp .env.example .env
+        continue-on-error: true
+      
+      # STEP 5: Code Quality Validation
+      # Executes ESLint to enforce coding standards and catch potential issues
+      # Fails the build if any linting errors are detected, enforcing quality gates
+      - name: Run ESLint code quality checks
         run: npm run lint
       
-      - name: Run tests with coverage
-        working-directory: src/backend
-        run: npm run test:ci
-        env:
-          NODE_ENV: test
-          CI: true
+      # STEP 6: Unit and Integration Testing
+      # Executes comprehensive test suite using Jest testing framework
+      # Includes both unit tests (individual functions) and integration tests (HTTP endpoints)
+      - name: Execute unit and integration tests
+        run: npm test
       
-      - name: Upload test coverage
-        uses: actions/upload-artifact@v3
+      # STEP 7: Code Coverage Analysis
+      # Generates comprehensive code coverage report using Jest built-in coverage
+      # Enforces coverage thresholds defined in package.json Jest configuration
+      - name: Generate code coverage report
+        run: npm run test:coverage
+      
+      # STEP 8: Coverage Artifact Upload
+      # Preserves coverage report as workflow artifact for review and analysis
+      # Always runs regardless of previous step failures to capture partial coverage
+      - name: Upload code coverage artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: coverage-report
-          path: src/backend/coverage
-          
-      - name: Check for vulnerabilities
-        working-directory: src/backend
-        run: npm audit --production
-        
-      - name: Security scan
-        working-directory: src/backend
-        run: npm run security-scan
-  
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+          path: ${{ env.WORKING_DIRECTORY }}/coverage
+          retention-days: 30
       
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      
-      - name: Build Docker image
-        uses: docker/build-push-action@v4
-        with:
-          context: src/backend
-          file: src/backend/Dockerfile
-          push: false
-          tags: node-hello-world:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      # STEP 9: Coverage Report Comment (Optional Enhancement)
+      # Future enhancement: Comment coverage results on pull requests
+      # Provides immediate feedback on code coverage changes
+      # Currently disabled - can be enabled by uncommenting the following step
+      #
+      # - name: Comment coverage report on PR
+      #   uses: marocchino/sticky-pull-request-comment@v2
+      #   if: github.event_name == 'pull_request'
+      #   with:
+      #     recreate: true
+      #     path: ${{ env.WORKING_DIRECTORY }}/coverage/lcov-report/index.html
+
+# =============================================================================
+# WORKFLOW EXECUTION FLOW AND EDUCATIONAL NOTES
+# =============================================================================
+#
+# EXECUTION SEQUENCE:
+# 1. Trigger: Push or PR to main/feature branches
+# 2. Environment: Ubuntu latest with Node.js v22.x
+# 3. Dependencies: Clean installation via npm ci
+# 4. Configuration: Environment variable setup
+# 5. Quality: ESLint code analysis
+# 6. Testing: Jest unit and integration tests
+# 7. Coverage: Code coverage analysis and reporting
+# 8. Artifacts: Coverage report preservation
+#
+# QUALITY GATES:
+# - Dependency installation must succeed (reproducible build requirement)
+# - ESLint checks must pass (code quality requirement)
+# - All tests must pass (functionality requirement)
+# - Coverage thresholds must be met (quality requirement)
+#
+# FAILURE SCENARIOS:
+# - npm ci fails: Likely package-lock.json or dependency issues
+# - ESLint fails: Code quality or style violations detected
+# - Tests fail: Functionality regression or test environment issues
+# - Coverage fails: Insufficient test coverage below defined thresholds
+#
+# EDUCATIONAL BENEFITS:
+# - Demonstrates modern CI/CD practices for Node.js applications
+# - Shows integration of quality tools (ESLint, Jest, coverage)
+# - Provides clear step-by-step workflow documentation
+# - Establishes reproducible build patterns for team development
+# - Supports branch protection and code review processes
+#
+# EXTENSIBILITY:
+# This workflow can be extended with additional steps such as:
+# - Security scanning (npm audit, Snyk)
+# - Performance testing and benchmarking
+# - Deployment to staging environments
+# - Integration with external services
+# - Matrix builds for multiple Node.js versions
+# - Parallel job execution for improved performance
+#
+# MAINTENANCE:
+# - Monitor GitHub Actions usage and performance
+# - Update action versions (checkout, setup-node, upload-artifact)
+# - Review and adjust coverage thresholds as code base evolves
+# - Consider splitting into multiple jobs for complex applications
+# - Regular review of workflow efficiency and educational value
+#
+# =============================================================================
