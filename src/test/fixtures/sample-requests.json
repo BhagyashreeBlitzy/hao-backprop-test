@@ -1,0 +1,242 @@
+{
+  "hello_get_request": {
+    "method": "GET",
+    "path": "/hello",
+    "headers": {
+      "accept": "text/plain",
+      "user-agent": "Node.js Tutorial Test Client/1.0",
+      "host": "localhost:3000",
+      "connection": "keep-alive",
+      "cache-control": "no-cache"
+    },
+    "body": null,
+    "query": {},
+    "params": {},
+    "description": "Canonical GET request to the /hello endpoint that should return 'Hello world' message with 200 status",
+    "expectedStatus": 200,
+    "expectedResponseType": "text/plain",
+    "testScenario": "successful_hello_endpoint_request"
+  },
+  "not_found_request": {
+    "method": "GET",
+    "path": "/not-a-real-endpoint",
+    "headers": {
+      "accept": "application/json",
+      "user-agent": "Node.js Tutorial Test Client/1.0",
+      "host": "localhost:3000",
+      "connection": "keep-alive",
+      "cache-control": "no-cache"
+    },
+    "body": null,
+    "query": {},
+    "params": {},
+    "description": "Request to a non-existent endpoint that should trigger 404 Not Found error handling",
+    "expectedStatus": 404,
+    "expectedResponseType": "application/json",
+    "testScenario": "not_found_error_handling"
+  },
+  "internal_error_request": {
+    "method": "GET",
+    "path": "/trigger-internal-error",
+    "headers": {
+      "accept": "application/json",
+      "user-agent": "Node.js Tutorial Test Client/1.0",
+      "host": "localhost:3000",
+      "connection": "keep-alive",
+      "cache-control": "no-cache"
+    },
+    "body": null,
+    "query": {},
+    "params": {},
+    "description": "Request to endpoint that triggers internal server error for testing 500 error handling",
+    "expectedStatus": 500,
+    "expectedResponseType": "application/json",
+    "testScenario": "internal_server_error_handling"
+  },
+  "hello_post_request": {
+    "method": "POST",
+    "path": "/hello",
+    "headers": {
+      "content-type": "application/json",
+      "accept": "application/json",
+      "user-agent": "Node.js Tutorial Test Client/1.0",
+      "host": "localhost:3000",
+      "connection": "keep-alive",
+      "cache-control": "no-cache"
+    },
+    "body": {
+      "message": "test request"
+    },
+    "query": {},
+    "params": {},
+    "description": "POST request to /hello endpoint to test method not allowed scenarios",
+    "expectedStatus": 405,
+    "expectedResponseType": "application/json",
+    "testScenario": "method_not_allowed_error_handling"
+  },
+  "hello_with_query_params_request": {
+    "method": "GET",
+    "path": "/hello",
+    "headers": {
+      "accept": "text/plain",
+      "user-agent": "Node.js Tutorial Test Client/1.0",
+      "host": "localhost:3000",
+      "connection": "keep-alive",
+      "cache-control": "no-cache"
+    },
+    "body": null,
+    "query": {
+      "name": "testuser",
+      "format": "json"
+    },
+    "params": {},
+    "description": "GET request to /hello with query parameters for testing parameter handling",
+    "expectedStatus": 200,
+    "expectedResponseType": "text/plain",
+    "testScenario": "hello_endpoint_with_query_params"
+  },
+  "malformed_request": {
+    "method": "GET",
+    "path": "/hello",
+    "headers": {
+      "accept": "text/plain",
+      "user-agent": "Node.js Tutorial Test Client/1.0",
+      "host": "localhost:3000",
+      "connection": "keep-alive",
+      "cache-control": "no-cache",
+      "malformed-header": "invalid\r\nheader-injection"
+    },
+    "body": null,
+    "query": {},
+    "params": {},
+    "description": "Request with malformed headers for testing input validation and security",
+    "expectedStatus": 400,
+    "expectedResponseType": "application/json",
+    "testScenario": "malformed_request_handling"
+  },
+  "large_header_request": {
+    "method": "GET",
+    "path": "/hello",
+    "headers": {
+      "accept": "text/plain",
+      "user-agent": "Node.js Tutorial Test Client/1.0",
+      "host": "localhost:3000",
+      "connection": "keep-alive",
+      "cache-control": "no-cache",
+      "x-large-header": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo."
+    },
+    "body": null,
+    "query": {},
+    "params": {},
+    "description": "Request with large headers for testing header size limits",
+    "expectedStatus": 431,
+    "expectedResponseType": "application/json",
+    "testScenario": "large_header_request_handling"
+  },
+  "timeout_simulation_request": {
+    "method": "GET",
+    "path": "/hello",
+    "headers": {
+      "accept": "text/plain",
+      "user-agent": "Node.js Tutorial Test Client/1.0",
+      "host": "localhost:3000",
+      "connection": "keep-alive",
+      "cache-control": "no-cache",
+      "x-simulate-timeout": "true"
+    },
+    "body": null,
+    "query": {
+      "delay": "5000"
+    },
+    "params": {},
+    "description": "Request with timeout simulation for testing timeout handling",
+    "expectedStatus": 408,
+    "expectedResponseType": "application/json",
+    "testScenario": "timeout_handling",
+    "timeout": 1000
+  },
+  "cors_preflight_request": {
+    "method": "OPTIONS",
+    "path": "/hello",
+    "headers": {
+      "origin": "http://localhost:8080",
+      "access-control-request-method": "GET",
+      "access-control-request-headers": "content-type,accept",
+      "user-agent": "Node.js Tutorial Test Client/1.0",
+      "host": "localhost:3000",
+      "connection": "keep-alive"
+    },
+    "body": null,
+    "query": {},
+    "params": {},
+    "description": "CORS preflight request for testing cross-origin resource sharing",
+    "expectedStatus": 200,
+    "expectedResponseType": "text/plain",
+    "testScenario": "cors_preflight_handling"
+  },
+  "health_check_request": {
+    "method": "GET",
+    "path": "/health",
+    "headers": {
+      "accept": "application/json",
+      "user-agent": "Node.js Tutorial Test Client/1.0",
+      "host": "localhost:3000",
+      "connection": "keep-alive",
+      "cache-control": "no-cache"
+    },
+    "body": null,
+    "query": {},
+    "params": {},
+    "description": "Health check request for testing application health monitoring",
+    "expectedStatus": 404,
+    "expectedResponseType": "application/json",
+    "testScenario": "health_check_endpoint"
+  },
+  "request_metadata": {
+    "version": "1.0.0",
+    "description": "Sample HTTP request objects for Node.js tutorial application testing",
+    "created": "2024-01-01T00:00:00.000Z",
+    "lastModified": "2024-01-01T00:00:00.000Z",
+    "author": "Node.js Tutorial Development Team",
+    "license": "MIT",
+    "compatibility": {
+      "nodejs": ">=18.0.0",
+      "express": ">=5.1.0"
+    },
+    "testFramework": "Jest",
+    "usage": "Import this fixture in test files to simulate HTTP requests",
+    "notes": [
+      "All request objects follow the HTTP/1.1 specification",
+      "Headers are normalized to lowercase for consistency",
+      "Body content is null for GET requests as per HTTP standards",
+      "Query parameters are provided as separate objects for clarity",
+      "Expected status codes and response types are included for validation",
+      "Test scenarios help identify the purpose of each request object",
+      "This fixture supports both unit and integration testing",
+      "Requests are designed to be educational and maintainable"
+    ]
+  },
+  "constants": {
+    "HELLO_GET_PATH": "/hello",
+    "NOT_FOUND_PATH": "/not-a-real-endpoint",
+    "INTERNAL_ERROR_PATH": "/trigger-internal-error",
+    "DEFAULT_PORT": 3000,
+    "DEFAULT_HOST": "localhost",
+    "DEFAULT_USER_AGENT": "Node.js Tutorial Test Client/1.0",
+    "HTTP_METHODS": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
+    "CONTENT_TYPES": {
+      "JSON": "application/json",
+      "TEXT": "text/plain",
+      "HTML": "text/html",
+      "XML": "application/xml"
+    },
+    "COMMON_HEADERS": {
+      "ACCEPT": "accept",
+      "CONTENT_TYPE": "content-type",
+      "USER_AGENT": "user-agent",
+      "HOST": "host",
+      "CONNECTION": "connection",
+      "CACHE_CONTROL": "cache-control"
+    }
+  }
+}
