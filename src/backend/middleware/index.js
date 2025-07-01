@@ -1,154 +1,94 @@
 /**
- * Middleware Module
+ * Centralized Middleware Export Module for Express.js Application
  * 
- * Implements middleware functions for the Node.js HTTP server application.
- * This module provides middleware for request logging, security headers, and
- * error handling that can be applied to both the native HTTP server and 
- * Express.js implementations.
+ * This module serves as a single import point for all Express middleware used in the backend
+ * application, providing consistent and maintainable middleware registration patterns. It
+ * re-exports core middleware components including error handling and request logging to
+ * support best practices for modularity and code organization.
  * 
- * @module middleware
+ * Features:
+ * - Centralized export point for all Express middleware components
+ * - Simplified import paths for app.js and server.js configuration
+ * - Supports scalable middleware management as the application grows
+ * - Promotes separation of concerns through modular middleware architecture
+ * - Ensures consistent middleware registration order across environments
+ * 
+ * Usage Pattern:
+ * The middleware should be imported and registered in the correct order:
+ * 1. requestLogger as the first middleware for comprehensive request/response logging
+ * 2. errorHandler as the last middleware for centralized error handling after all routes
+ * 
+ * This pattern supports Express.js best practices and ensures proper middleware pipeline
+ * execution with comprehensive observability and error management.
+ * 
+ * @fileoverview Centralized middleware exports for Express.js application
+ * @author Backend Development Team
+ * @version 1.0.0
+ * @since Node.js 18+
  */
 
-// Import dependencies
-const { logRequest, error } = require('../utils/logger');
-const { handleServerError } = require('../handlers/error');
+// Internal middleware imports - Core Express middleware components
+const { errorHandler } = require('./errorHandler.js'); // Express error-handling middleware for standardized error response formatting and logging
+const { requestLogger } = require('./requestLogger.js'); // Express middleware for logging HTTP requests and responses with structured, environment-aware output
 
 /**
- * Middleware that logs information about HTTP requests and responses
+ * Named exports for all Express middleware components
  * 
- * @param {Object} req - HTTP request object
- * @param {Object} res - HTTP response object
- * @param {Function} next - Function to call the next middleware
- */
-function requestLogger(req, res, next) {
-  // Record start time to calculate response time
-  const startTime = Date.now();
-  
-  // Store the original end method
-  const originalEnd = res.end;
-  
-  // Override the end method to log the request when it completes
-  res.end = function(chunk, encoding) {
-    // Calculate response time
-    const responseTime = Date.now() - startTime;
-    
-    // Log the request using the logger utility
-    logRequest(req, res, responseTime);
-    
-    // Call the original end method with the same arguments
-    return originalEnd.call(this, chunk, encoding);
-  };
-  
-  // Continue to the next middleware or handler
-  next();
-}
-
-/**
- * Middleware that adds security headers to HTTP responses
+ * This export pattern enables selective importing of middleware components while maintaining
+ * a centralized location for middleware registration. It supports tree-shaking optimization
+ * and provides clear dependency management for the Express application setup.
  * 
- * @param {Object} req - HTTP request object
- * @param {Object} res - HTTP response object
- * @param {Function} next - Function to call the next middleware
+ * @namespace MiddlewareExports
  */
-function securityHeaders(req, res, next) {
-  // Prevent MIME type sniffing
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  
-  // Prevent clickjacking attacks
-  res.setHeader('X-Frame-Options', 'DENY');
-  
-  // Content Security Policy to restrict resource loading
-  res.setHeader('Content-Security-Policy', "default-src 'none'");
-  
-  // Continue to the next middleware or handler
-  next();
-}
-
-/**
- * Middleware that handles errors in the request processing pipeline
- * 
- * @param {Error} err - Error object
- * @param {Object} req - HTTP request object
- * @param {Object} res - HTTP response object
- * @param {Function} next - Function to call the next middleware (not used in this case)
- */
-function errorMiddleware(err, req, res, next) {
-  // Use the error handler to process the server error
-  handleServerError(req, res, err);
-  
-  // No need to call next() as this is the final error handler
-}
-
-/**
- * Helper function that applies an array of middleware functions to a request handler
- * 
- * @param {Function} handler - The request handler function
- * @param {Array<Function>} middlewares - Array of middleware functions to apply
- * @returns {Function} Enhanced request handler with middleware applied
- */
-function applyMiddleware(handler, middlewares = []) {
-  // If no middlewares provided, return the original handler
-  if (!middlewares.length) {
-    return handler;
-  }
-  
-  // Create a middleware chain that ends with the handler
-  return function(req, res) {
-    try {
-      // Execute the middleware chain
-      createMiddlewareChain(middlewares, handler)(req, res);
-    } catch (err) {
-      // Handle any synchronous errors that occur
-      errorMiddleware(err, req, res);
-    }
-  };
-}
-
-/**
- * Creates a chain of middleware functions that execute in sequence
- * 
- * @param {Array<Function>} middlewares - Array of middleware functions
- * @param {Function} finalHandler - The final handler to call after all middleware
- * @returns {Function} Function that executes the middleware chain
- * @private
- */
-function createMiddlewareChain(middlewares, finalHandler) {
-  return function(req, res) {
-    let index = 0;
-    
-    // Function to call the next middleware in the chain
-    function next(err) {
-      // If an error occurred, skip to error handling
-      if (err) {
-        return errorMiddleware(err, req, res);
-      }
-      
-      // Get the current middleware
-      const middleware = index < middlewares.length
-        ? middlewares[index++]
-        : finalHandler;
-        
-      // If we've reached the end of the chain, stop
-      if (!middleware) return;
-      
-      try {
-        // Call the current middleware with request, response, and next
-        middleware(req, res, next);
-      } catch (err) {
-        // Handle any synchronous errors
-        next(err);
-      }
-    }
-    
-    // Start the middleware chain
-    next();
-  };
-}
-
-// Export middleware functions and helpers
 module.exports = {
-  requestLogger,
-  securityHeaders,
-  errorMiddleware,
-  applyMiddleware
+    /**
+     * Express error-handling middleware for standardized error response formatting and logging
+     * 
+     * Provides centralized error handling for all Express routes and middleware, ensuring
+     * consistent error response formatting, secure error handling, and comprehensive error
+     * logging. Distinguishes between operational errors (HttpError instances) and unexpected
+     * system errors for appropriate handling.
+     * 
+     * Registration Order: Must be registered AFTER all route handlers and other middleware
+     * to ensure it catches all errors thrown in the Express pipeline.
+     * 
+     * @function errorHandler
+     * @param {Error} err - The error object caught by Express.js error handling pipeline
+     * @param {Request} req - Express.js request object containing client request information
+     * @param {Response} res - Express.js response object for sending HTTP responses to client
+     * @param {Function} next - Express.js next function for continuing middleware pipeline
+     * @returns {void} Sends HTTP error response to client and logs error details
+     * 
+     * @example
+     * // Register in app.js after all routes
+     * const { errorHandler } = require('./middleware');
+     * app.use('/api', routes);
+     * app.use(errorHandler); // Must be last
+     */
+    errorHandler,
+
+    /**
+     * Express middleware for logging HTTP requests and responses with structured, environment-aware output
+     * 
+     * Provides comprehensive HTTP request and response logging with structured output for
+     * observability and troubleshooting. Integrates with the centralized Logger utility to
+     * ensure consistent logging patterns across the application with environment-aware
+     * configuration and high-resolution timing for performance monitoring.
+     * 
+     * Registration Order: Should be registered FIRST to ensure comprehensive coverage of all
+     * incoming requests, including those that result in errors or are handled by other middleware.
+     * 
+     * @function requestLogger
+     * @param {Object} req - Express Request object containing HTTP request information
+     * @param {Object} res - Express Response object for HTTP response handling
+     * @param {Function} next - Express next middleware function for continuing the chain
+     * @returns {void} Calls next() to continue middleware execution after setting up logging
+     * 
+     * @example
+     * // Register in app.js as first middleware
+     * const { requestLogger } = require('./middleware');
+     * app.use(requestLogger); // Must be first
+     * app.use('/api', routes);
+     */
+    requestLogger
 };

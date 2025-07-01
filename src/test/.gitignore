@@ -1,0 +1,46 @@
+# Test Coverage Reports
+coverage/
+coverage.*
+*.lcov
+.nyc_output/
+
+# Test Results and Output
+test-results/
+output/
+reports/
+
+# Log Files
+*.log
+
+# Temporary Files
+*.tmp
+*.temp
+
+# Build Artifacts
+*.tsbuildinfo
+
+# Node.js Testing Artifacts
+.jest/
+junit.xml
+test-report.xml
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup Files
+*.bak
+*.backup
+*.orig

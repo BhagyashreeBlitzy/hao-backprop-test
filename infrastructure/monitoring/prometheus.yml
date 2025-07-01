@@ -1,56 +1,168 @@
-# Prometheus configuration file for Node.js Hello World application monitoring
-# This defines metrics collection settings, scrape targets, and intervals
+# Prometheus configuration for Node.js/Express.js tutorial backend monitoring
+# This configuration file defines scrape jobs, targets, and settings for robust
+# educational and reproducible monitoring compatible with Docker Compose deployment
 
-# Global configuration specifies parameters that are valid in all other configuration contexts
+# Global configuration settings
 global:
-  # How frequently to scrape targets by default
+  # Set global scrape interval to 15 seconds for near real-time metrics collection
+  # This provides a good balance between data freshness and resource consumption
   scrape_interval: 15s
-  # How frequently to evaluate rules
+  
+  # Set global evaluation interval to 15 seconds for rule evaluation
+  # This ensures alerting rules are evaluated at the same frequency as metrics collection
   evaluation_interval: 15s
-  # How long until a scrape request times out
+  
+  # Optional: Set scrape timeout to 10 seconds (default)
+  # This allows sufficient time for the backend service to respond
   scrape_timeout: 10s
+  
+  # Add external labels for identification in federated setups (optional for tutorial)
+  external_labels:
+    environment: 'tutorial'
+    project: 'nodejs-hello-world'
 
-# Scrape configurations contain the targets and parameters for metrics collection
+# Rule files configuration for alerting (optional for educational deployments)
+rule_files:
+  # Alerting rules can be added here for production deployments
+  # For tutorial purposes, this remains empty but demonstrates the structure
+  # - "alert_rules.yml"
+
+# Scrape configuration for targets
 scrape_configs:
-  # Self-monitoring of the Prometheus server
+  # Job configuration for the Node.js/Express.js backend service
+  - job_name: 'nodejs-backend'
+    
+    # Set metrics path to the standard Prometheus metrics endpoint
+    # The backend service must expose metrics at this path using prom-client or similar
+    metrics_path: '/metrics'
+    
+    # Set scrape interval specific to this job (inherits global if not set)
+    scrape_interval: 15s
+    
+    # Set scrape timeout specific to this job
+    scrape_timeout: 10s
+    
+    # Honor labels from the target (useful for metric relabeling)
+    honor_labels: false
+    
+    # Honor timestamps from the target (set to false for consistency)
+    honor_timestamps: true
+    
+    # Static configuration for Docker Compose service discovery
+    static_configs:
+      - targets: ['backend:3000']
+        labels:
+          # Add custom labels for better metric identification
+          service: 'nodejs-backend'
+          component: 'tutorial-app'
+          environment: 'development'
+    
+    # Relabel configurations for enhanced metric labeling
+    relabel_configs:
+      # Copy the target address to instance label for Grafana templating
+      - source_labels: ['__address__']
+        target_label: 'instance'
+      
+      # Add job label for metric identification
+      - source_labels: ['job']
+        target_label: 'job'
+        replacement: 'nodejs-backend'
+      
+      # Optional: Customize instance label format
+      - source_labels: ['__address__']
+        target_label: '__param_target'
+      
+      # Set the scrape URL based on target
+      - source_labels: ['__param_target']
+        target_label: '__address__'
+        replacement: '${1}'
+
+  # Optional: Health check endpoint scraping (if exposed separately)
+  - job_name: 'nodejs-backend-health'
+    
+    # Set metrics path to health endpoint if health metrics are exposed separately
+    metrics_path: '/health'
+    
+    # Use different scrape interval for health checks
+    scrape_interval: 30s
+    scrape_timeout: 5s
+    
+    # Static configuration for health endpoint
+    static_configs:
+      - targets: ['backend:3000']
+        labels:
+          service: 'nodejs-backend'
+          component: 'health-check'
+          environment: 'development'
+    
+    # Relabel configurations for health check metrics
+    relabel_configs:
+      - source_labels: ['__address__']
+        target_label: 'instance'
+      
+      - replacement: 'nodejs-backend-health'
+        target_label: 'job'
+
+  # Optional: Prometheus self-monitoring (recommended for production)
   - job_name: 'prometheus'
+    
+    # Scrape Prometheus's own metrics
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    
     static_configs:
       - targets: ['localhost:9090']
         labels:
           service: 'prometheus'
-    metrics_path: '/metrics'
-    scheme: 'http'
+          component: 'monitoring'
 
-  # Application metrics monitoring
-  - job_name: 'hello-world-app'
-    static_configs:
-      - targets: ['hello-world-app:3000']
-        labels:
-          service: 'hello-world-app'
-    metrics_path: '/metrics'
-    scheme: 'http'
-    # More frequent scraping for application metrics
-    scrape_interval: 5s
-    scrape_timeout: 3s
+  # Optional: Node Exporter for system metrics (if deployed)
+  # Uncomment and configure if node_exporter is added to the Docker Compose stack
+  # - job_name: 'node-exporter'
+  #   metrics_path: '/metrics'
+  #   scrape_interval: 15s
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']
+  #       labels:
+  #         service: 'node-exporter'
+  #         component: 'system-metrics'
 
-  # Application health monitoring
-  - job_name: 'hello-world-health'
-    static_configs:
-      - targets: ['hello-world-app:3000']
-        labels:
-          service: 'hello-world-app'
-          endpoint: 'health'
-    metrics_path: '/health'
-    scheme: 'http'
-    # Less frequent health checks
-    scrape_interval: 30s
-    scrape_timeout: 5s
-
-# Alerting configuration (placeholder - not fully configured for this simple application)
+# Alerting configuration (optional for educational deployments)
 alerting:
   alertmanagers:
+    # Alertmanager configuration can be added here for production deployments
+    # For tutorial purposes, this demonstrates the structure
     - static_configs:
-        - targets: []  # No alertmanager configured
+        - targets: []
+          # - 'alertmanager:9093'
+      
+      # Optional: Configure alertmanager service discovery
+      # scheme: http
+      # path_prefix: /
+      # timeout: 10s
 
-# Rules files (placeholder - not used in this simple configuration)
-rule_files: []
+# Optional: Remote write configuration for external storage
+# Useful for production deployments with long-term storage requirements
+# remote_write:
+#   - url: "http://remote-storage:9201/write"
+#     queue_config:
+#       max_samples_per_send: 1000
+#       max_shards: 200
+#       capacity: 2500
+
+# Optional: Remote read configuration for external query federation
+# remote_read:
+#   - url: "http://remote-storage:9201/read"
+#     read_recent: true
+
+# Storage configuration (using default local storage)
+# For production deployments, consider configuring retention policies
+# storage.tsdb.retention.time: 15d
+# storage.tsdb.retention.size: 10GB
+
+# Web console configuration (optional)
+# Useful for debugging and educational purposes
+# web.console.libraries: /etc/prometheus/console_libraries
+# web.console.templates: /etc/prometheus/consoles
+# web.enable-lifecycle: true
+# web.enable-admin-api: true

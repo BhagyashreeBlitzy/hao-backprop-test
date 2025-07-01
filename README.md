@@ -1,298 +1,629 @@
-# Node.js Hello World Service
+# Node.js Hello World Tutorial Application
 
-A simple Node.js HTTP server application that exposes a single REST endpoint `/hello` which returns "Hello world" to clients.
+[![Build Status](https://github.com/username/nodejs-hello-tutorial/workflows/CI/badge.svg)](https://github.com/username/nodejs-hello-tutorial/actions)
+[![Coverage Status](https://codecov.io/gh/username/nodejs-hello-tutorial/branch/main/graph/badge.svg)](https://codecov.io/gh/username/nodejs-hello-tutorial)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
+[![Express Version](https://img.shields.io/badge/express-5.1.0-blue.svg)](https://expressjs.com/)
 
-![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)
-![License](https://img.shields.io/badge/license-MIT-blue)
-![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+## Project Overview
 
-## Overview
+This project is a Node.js tutorial application that demonstrates fundamental web server capabilities through a simple HTTP endpoint implementation. The application leverages **Node.js 22.x LTS** as a free, open-source, cross-platform JavaScript runtime environment combined with **Express.js 5.1.0** (now the default on npm) as the web framework.
 
-This project demonstrates fundamental Node.js web service concepts with minimal complexity. It serves as an educational tool and reference implementation for basic HTTP server functionality in Node.js.
+### Core Business Problem
 
-The application provides a minimal, functional example of a Node.js web service that can serve as a learning tool or starter template for developers new to Node.js or as a reference implementation for more complex services.
+The project addresses the fundamental need for developers to understand basic web server implementation using modern JavaScript technologies. It serves as an educational foundation for building HTTP-based applications, demonstrating how to create a responsive web endpoint that can handle client requests and return appropriate responses.
+
+### Key Stakeholders
+
+- **Development Teams**: Learning Node.js fundamentals and Express.js implementation
+- **Technical Educators**: Teaching web development concepts through practical examples  
+- **Software Architects**: Evaluating modern JavaScript server-side architecture patterns
+- **DevOps Engineers**: Understanding application deployment and runtime requirements
+
+### Business Value
+
+The tutorial application provides immediate educational value by demonstrating industry-standard practices for Node.js web development. Express.js has been called the de facto standard server framework for Node.js and is used by Fox Sports, PayPal, Uber, and IBM, making this tutorial highly relevant for modern web development education.
+
+## Table of Contents
+
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [Installation](#installation)  
+- [Usage](#usage)
+- [API Reference](#api-reference)
+- [Testing](#testing)
+- [Deployment](#deployment)
+- [Project Structure](#project-structure)
+- [Contributing](#contributing)
+- [License](#license)
+- [References](#references)
 
 ## Features
 
-- HTTP server implementation in Node.js
-- Single `/hello` endpoint returning "Hello world" text
-- Support for both native HTTP module and Express.js implementations
-- Basic request logging
-- Error handling for various scenarios
-- Security headers
-- Configurable server settings
-- Docker and Docker Compose support
-- Monitoring with Prometheus and Grafana
+- **Modern Stack**: Node.js 18+ and Express.js 5.1.0 with latest security features
+- **Single HTTP Endpoint**: Clean `/hello` GET endpoint implementation
+- **Static Response**: Returns consistent "Hello world" message
+- **Educational Focus**: Demonstrates fundamental HTTP request-response patterns
+- **Basic Error Handling**: Proper HTTP status codes and error responses
+- **Health Check Support**: Built-in application health monitoring
+- **Comprehensive Test Suite**: Unit and integration tests with coverage reporting
+- **Security Enhanced**: Express.js 5.0 includes ReDoS attack prevention and CVE-2024-45590 mitigation
+- **Cross-Platform**: Compatible with Windows, macOS, Linux, and other Node.js supported platforms
 
-## Requirements
+## Quick Start
 
-- Node.js 18.x LTS or higher
-- npm 9.x or higher
-
-For containerized deployment:
-- Docker
-- Docker Compose (optional, for running with monitoring)
-
-## Installation
-
-### Local Development
+Get up and running in less than 2 minutes:
 
 ```bash
 # Clone the repository
-git clone <repository-url>
-
-# Navigate to the backend directory
-cd src/backend
+git clone https://github.com/username/nodejs-hello-tutorial.git
+cd nodejs-hello-tutorial
 
 # Install dependencies
 npm install
+
+# Start the server
+npm start
+
+# Test the endpoint
+curl http://localhost:3000/hello
 ```
 
-### Docker Installation
+**Expected Response**: `Hello world`
 
+## Installation
+
+### Prerequisites
+
+- **Node.js**: Version 18.0.0 or higher (22.x LTS recommended)
+- **npm**: Version 8.0.0 or higher (comes bundled with Node.js)
+
+> **Note**: Express.js 5.0 requires Node.js 18 or higher for security standards and modern JavaScript feature support.
+
+### Step-by-Step Installation
+
+1. **Verify Node.js Installation**:
+   ```bash
+   node --version  # Should show v18.0.0 or higher
+   npm --version   # Should show 8.0.0 or higher
+   ```
+
+2. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/username/nodejs-hello-tutorial.git
+   cd nodejs-hello-tutorial
+   ```
+
+3. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
+
+4. **Verify Installation**:
+   ```bash
+   npm ls  # Check dependency tree
+   npm audit  # Security vulnerability check
+   ```
+
+5. **Start the Application**:
+   ```bash
+   npm start
+   ```
+
+6. **Verify Server is Running**:
+   ```bash
+   # The server should display: "Server running on port 3000"
+   # Test the endpoint:
+   curl http://localhost:3000/hello
+   ```
+
+### Alternative Installation Methods
+
+**Using Docker** (Optional):
 ```bash
-# Clone the repository
-git clone <repository-url>
+# Build Docker image
+docker build -t nodejs-hello-tutorial .
 
-# Navigate to the backend directory
-cd src/backend
-
-# Build the Docker image
-docker build -t node-hello-world .
+# Run container
+docker run -p 3000:3000 nodejs-hello-tutorial
 ```
-
-## Configuration
-
-The application can be configured using environment variables or a `.env` file in the backend directory.
-
-### Available Configuration Options
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| PORT | 3000 | The port number the server will listen on |
-| HOST | 0.0.0.0 | The host address the server will bind to |
-| NODE_ENV | development | Environment mode (development, production, test) |
-| LOG_LEVEL | INFO | Logging level (INFO, WARN, ERROR) |
-
-### Example .env file
-
-```
-PORT=8080
-HOST=127.0.0.1
-NODE_ENV=development
-LOG_LEVEL=INFO
-```
-
-A sample configuration file is provided as `.env.example` in the backend directory.
 
 ## Usage
 
-### Starting the Server Locally
+### Basic Usage
 
+Once the server is running, you can interact with the API endpoint:
+
+**Start the Server**:
 ```bash
-# Navigate to the backend directory
-cd src/backend
-
-# Start the server using the native HTTP implementation
 npm start
-
-# Start the server with automatic restart during development
-npm run dev
+# Output: Server running on port 3000
 ```
 
-### Running with Docker
-
-```bash
-# Run the Docker container
-docker run -p 3000:3000 node-hello-world
-```
-
-### Running with Docker Compose (includes monitoring)
-
-```bash
-# Navigate to the infrastructure directory
-cd infrastructure
-
-# Start all services (application, Prometheus, Grafana)
-docker-compose up -d
-```
-
-### Using the API
-
-Once the server is running, you can access the endpoint:
-
+**Access the Hello Endpoint**:
 ```bash
 # Using curl
 curl http://localhost:3000/hello
 
-# Expected response
+# Using wget
+wget -qO- http://localhost:3000/hello
+
+# Using httpie
+http GET localhost:3000/hello
+```
+
+**Expected Response**:
+```
 Hello world
 ```
 
-You can also access the endpoint in a web browser by navigating to `http://localhost:3000/hello`.
+### Development Mode
 
-## Project Structure
+For development with automatic restart on file changes:
 
-```
-├── .github/                # GitHub configuration files
-│   ├── workflows/         # GitHub Actions workflows
-│   └── ISSUE_TEMPLATE/    # Issue templates
-├── infrastructure/        # Deployment and infrastructure files
-│   ├── monitoring/        # Prometheus and Grafana configuration
-│   ├── scripts/           # Deployment and utility scripts
-│   └── docker-compose.yml # Docker Compose configuration
-├── src/
-│   └── backend/           # Node.js application code
-│       ├── __tests__/     # Test files
-│       ├── handlers/      # Request handlers
-│       ├── middleware/    # Middleware functions
-│       ├── utils/         # Utility functions
-│       ├── config.js      # Application configuration
-│       ├── index.js       # Application entry point
-│       ├── server.js      # Native HTTP server implementation
-│       └── server-express.js # Express server implementation
-├── .gitignore             # Git ignore file
-├── LICENSE                # MIT license file
-└── README.md              # This documentation file
+```bash
+# Install nodemon globally (optional)
+npm install -g nodemon
+
+# Run in development mode
+npm run dev
 ```
 
-For more detailed information about the backend structure, see [src/backend/README.md](src/backend/README.md).
+### Environment Configuration
 
-## API Documentation
+The application supports environment-based configuration:
 
-### GET /hello
+```bash
+# Set custom port
+PORT=8080 npm start
 
-Returns a simple "Hello world" message.
+# Set environment mode
+NODE_ENV=production npm start
 
-**Request**
-
+# Combined configuration
+PORT=8080 NODE_ENV=production npm start
 ```
+
+### Health Check
+
+Monitor application health:
+
+```bash
+curl http://localhost:3000/health
+```
+
+**Response Example**:
+```json
+{
+  "status": "healthy",
+  "uptime": 125.45,
+  "timestamp": "2025-07-01T12:00:00.000Z",
+  "memory": {
+    "rss": 45678592,
+    "heapTotal": 20971520,
+    "heapUsed": 15728640,
+    "external": 1048576
+  }
+}
+```
+
+## API Reference
+
+### Endpoints
+
+#### GET /hello
+
+Returns a "Hello world" message demonstrating basic HTTP endpoint functionality.
+
+**Request**:
+```http
 GET /hello HTTP/1.1
 Host: localhost:3000
+Accept: text/plain
 ```
 
-**Response**
-
-```
+**Response**:
+```http
 HTTP/1.1 200 OK
-Content-Type: text/plain
-X-Content-Type-Options: nosniff
-X-Frame-Options: DENY
-Content-Security-Policy: default-src 'none'
+Content-Type: text/plain; charset=utf-8
+Content-Length: 11
+Date: Wed, 01 Jul 2025 12:00:00 GMT
 
 Hello world
+```
+
+**cURL Example**:
+```bash
+curl -X GET http://localhost:3000/hello \
+  -H "Accept: text/plain"
+```
+
+**JavaScript Fetch Example**:
+```javascript
+fetch('http://localhost:3000/hello')
+  .then(response => response.text())
+  .then(data => console.log(data)); // "Hello world"
+```
+
+#### GET /health
+
+Returns application health and status information.
+
+**Response**:
+```json
+{
+  "status": "healthy",
+  "uptime": 125.45,
+  "timestamp": "2025-07-01T12:00:00.000Z",
+  "memory": {
+    "rss": 45678592,
+    "heapTotal": 20971520,
+    "heapUsed": 15728640
+  }
+}
 ```
 
 ### Error Responses
 
-**404 Not Found**
+#### 404 Not Found
+For requests to non-existent endpoints:
 
-Returned when requesting a non-existent endpoint.
-
-```
+```http
 HTTP/1.1 404 Not Found
-Content-Type: text/plain
+Content-Type: text/html; charset=utf-8
+Content-Length: 139
 
-Not Found
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Error</title></head>
+<body><pre>Cannot GET /invalid-path</pre></body>
+</html>
 ```
 
-**405 Method Not Allowed**
+#### 405 Method Not Allowed
+For invalid HTTP methods on existing endpoints:
 
-Returned when using an unsupported HTTP method on an existing endpoint.
-
-```
+```http
 HTTP/1.1 405 Method Not Allowed
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
 Allow: GET
 
 Method Not Allowed
 ```
 
-## Implementation Details
+#### 500 Internal Server Error
+For server-side errors:
 
-This project provides two server implementations:
+```http
+HTTP/1.1 500 Internal Server Error
+Content-Type: text/plain; charset=utf-8
 
-1. **Native HTTP Module** (`server.js`): Uses Node.js built-in HTTP module without additional frameworks.
+Internal Server Error
+```
 
-2. **Express.js** (`server-express.js`): Uses the Express.js framework for simplified routing and middleware.
+### Response Headers
 
-By default, the application uses the native HTTP implementation. To use the Express implementation, modify the `index.js` file to import from `server-express.js` instead of `server.js`.
+All responses include security headers:
 
-### Key Components
+- `X-Content-Type-Options: nosniff` - Prevents MIME type sniffing
+- `X-Frame-Options: DENY` - Prevents clickjacking attacks
+- `X-XSS-Protection: 1; mode=block` - Enables XSS filtering
 
-- **HTTP Server**: Lightweight Node.js server handling incoming HTTP requests
-- **Request Router**: Directs incoming requests to appropriate handlers based on URL path
-- **Hello Handler**: Processes requests to `/hello` endpoint and generates responses
-- **Error Handler**: Manages error conditions and generates appropriate error responses
-- **Middleware**: Provides logging, security headers, and other cross-cutting concerns
+## Testing
 
-## Development
+The application includes a comprehensive test suite using Jest and Supertest.
 
 ### Running Tests
 
 ```bash
-# Navigate to the backend directory
-cd src/backend
-
 # Run all tests
 npm test
 
-# Run tests with coverage report
+# Run tests with coverage
 npm run test:coverage
 
-# Run tests in watch mode during development
+# Run tests in watch mode (development)
 npm run test:watch
+
+# Run tests with verbose output
+npm run test:verbose
+
+# Run tests for CI/CD
+npm run test:ci
 ```
 
-### Linting
+### Test Structure
 
+```
+test/
+├── unit/
+│   └── hello.test.js       # Unit tests for route handlers
+├── integration/
+│   └── server.test.js      # Integration tests for HTTP server
+└── fixtures/
+    └── responses.js        # Test data and fixtures
+```
+
+### Test Coverage
+
+The test suite maintains high coverage standards:
+
+- **Line Coverage**: 90%+ target
+- **Function Coverage**: 100% target  
+- **Branch Coverage**: 80%+ target
+- **Statement Coverage**: 90%+ target
+
+**View Coverage Report**:
 ```bash
-# Run ESLint
-npm run lint
-
-# Fix automatically fixable issues
-npm run lint:fix
+npm run test:coverage
+# Open coverage/index.html in browser
 ```
 
-### Security Audit
+### Test Examples
 
+**Basic Endpoint Test**:
+```javascript
+describe('GET /hello', () => {
+  it('should return Hello world', async () => {
+    const response = await request(app)
+      .get('/hello')
+      .expect(200)
+      .expect('Content-Type', /text/);
+    
+    expect(response.text).toBe('Hello world');
+  });
+});
+```
+
+**Performance Test**:
+```javascript
+it('should respond within 100ms', async () => {
+  const start = Date.now();
+  await request(app).get('/hello').expect(200);
+  const duration = Date.now() - start;
+  
+  expect(duration).toBeLessThan(100);
+});
+```
+
+## Deployment
+
+The application supports multiple deployment options from local development to cloud platforms.
+
+### Local Deployment
+
+**Production Mode**:
 ```bash
-# Check for vulnerabilities
-npm run audit
-
-# Fix vulnerabilities when possible
-npm run audit:fix
+NODE_ENV=production npm start
 ```
 
-## Monitoring
+**Custom Port Configuration**:
+```bash
+PORT=8080 npm start
+```
 
-When running with Docker Compose, the application includes Prometheus and Grafana for monitoring:
+### Docker Deployment
 
-- **Prometheus**: Collects metrics from the application
-  - Access at: http://localhost:9090
+**Using Docker Compose**:
+```yaml
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+```
 
-- **Grafana**: Provides visualization dashboards
-  - Access at: http://localhost:3001
-  - Default credentials: admin/admin
+**Commands**:
+```bash
+# Build and run
+docker-compose up --build
 
-The monitoring setup includes:
-- Basic server metrics (CPU, memory, request count)
-- Response time tracking
-- Error rate monitoring
-- Health check status
+# Run in background
+docker-compose up -d
+```
+
+### Cloud Platform Deployment
+
+#### Render (Recommended for Tutorials)
+
+Render stands out among Node.js free hosting services with its straightforward deployment process:
+
+1. Connect your GitHub repository to Render
+2. Configure build settings:
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+3. Deploy automatically on git push
+
+#### Vercel
+
+While primarily known for frontend hosting, Vercel provides excellent Node.js hosting:
+
+1. Install Vercel CLI: `npm i -g vercel`
+2. Deploy: `vercel --prod`
+3. Configure environment variables in dashboard
+
+#### Railway
+
+Railway offers a modern approach to Node.js hosting:
+
+1. Connect GitHub repository
+2. Configure environment variables
+3. Deploy with automatic builds
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `3000` | Server port (automatically set by hosting platforms) |
+| `NODE_ENV` | `development` | Environment mode (`development`, `production`) |
+| `HOST` | `localhost` | Server hostname |
+
+### Health Check Configuration
+
+For load balancers and monitoring systems:
+
+- **Health Check URL**: `/health`
+- **Expected Status**: `200 OK`
+- **Response Format**: JSON with status information
+- **Timeout**: 5 seconds recommended
+
+### Performance Considerations
+
+- **Memory Usage**: < 100MB baseline consumption
+- **Response Time**: < 100ms for `/hello` endpoint
+- **Concurrent Connections**: 1000+ supported
+- **Startup Time**: < 500ms for application initialization
+
+## Project Structure
+
+```
+nodejs-hello-tutorial/
+├── app.js                  # Main application file
+├── package.json           # Project configuration and dependencies
+├── package-lock.json      # Dependency lock file
+├── README.md              # This documentation file
+├── LICENSE               # MIT license file
+├── .gitignore            # Git ignore rules
+├── .dockerignore         # Docker ignore rules
+├── Dockerfile            # Docker configuration (optional)
+├── docker-compose.yml    # Docker Compose configuration (optional)
+├── jest.config.js        # Jest testing configuration
+├── test/                 # Test suites and fixtures
+│   ├── unit/
+│   │   └── hello.test.js
+│   ├── integration/
+│   │   └── server.test.js
+│   └── fixtures/
+│       └── responses.js
+├── docs/                 # Additional documentation
+│   ├── getting-started.md
+│   ├── api-documentation.md
+│   ├── deployment-guide.md
+│   ├── contributing.md
+│   └── architecture.md
+└── infrastructure/       # Deployment and monitoring scripts
+    ├── docker/
+    └── monitoring/
+```
+
+### Key Files Description
+
+- **`app.js`**: Main Express.js application with route definitions
+- **`package.json`**: Project metadata, dependencies, and npm scripts
+- **`jest.config.js`**: Test framework configuration with coverage settings
+- **`Dockerfile`**: Container configuration for Docker deployment
+- **`test/`**: Comprehensive test suite with unit and integration tests
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+We welcome contributions to improve this tutorial application!
+
+### Getting Started
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes
+4. Run tests: `npm test`
+5. Commit changes: `git commit -m 'Add amazing feature'`
+6. Push to branch: `git push origin feature/amazing-feature`
+7. Submit a Pull Request
 
-Please make sure your code passes all tests and linting checks before submitting a pull request.
+### Development Guidelines
+
+- Follow the existing code style and conventions
+- Write tests for new functionality
+- Maintain or improve code coverage
+- Update documentation for significant changes
+- Use meaningful commit messages
+
+### Code of Conduct
+
+This project adheres to the [Contributor Covenant Code of Conduct](docs/contributing.md#code-of-conduct). By participating, you are expected to uphold this code.
+
+### Reporting Issues
+
+- Use the GitHub issue tracker
+- Provide detailed reproduction steps
+- Include environment information (Node.js version, OS, etc.)
+- Add relevant logs or error messages
+
+### Documentation Contributions
+
+- Documentation improvements are highly valued
+- Follow the existing documentation style
+- Test any code examples provided
+- Update table of contents when adding new sections
+
+For detailed contribution guidelines, see [CONTRIBUTING.md](docs/contributing.md).
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+```
+MIT License
+
+Copyright (c) 2025 Node.js Hello World Tutorial
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## References
+
+### Framework Documentation
+
+- [Node.js Official Documentation](https://nodejs.org/docs/) - JavaScript runtime environment
+- [Express.js 5.x Documentation](https://expressjs.com/5x/api.html) - Web framework documentation
+- [npm Documentation](https://docs.npmjs.com/) - Package manager documentation
+
+### Educational Resources
+
+- [Node.js Best Practices](https://github.com/goldbergyoni/nodebestpractices) - Comprehensive best practices guide
+- [Express.js Guide](https://expressjs.com/en/guide/) - Official Express.js learning guide
+- [MDN Web Docs - HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP) - HTTP protocol reference
+
+### Testing and Quality
+
+- [Jest Documentation](https://jestjs.io/docs/getting-started) - JavaScript testing framework
+- [Supertest Documentation](https://github.com/ladjs/supertest) - HTTP testing library
+- [npm audit](https://docs.npmjs.com/cli/v8/commands/npm-audit) - Security vulnerability checking
+
+### Deployment Platforms
+
+- [Render Node.js Deployment](https://render.com/docs/node-express-app) - Deployment guide for Render
+- [Vercel Node.js Functions](https://vercel.com/docs/functions/serverless-functions/runtimes/node-js) - Serverless deployment
+- [Railway Node.js Guide](https://docs.railway.app/guides/nodejs) - Modern deployment platform
+
+### Additional Documentation
+
+- [Getting Started Guide](docs/getting-started.md) - Detailed setup and tutorial
+- [API Documentation](docs/api-documentation.md) - Complete API reference
+- [Deployment Guide](docs/deployment-guide.md) - Comprehensive deployment instructions
+- [Architecture Overview](docs/architecture.md) - System design and technical details
+
+---
+
+**Made with ❤️ for the Node.js community**
+
+*This tutorial application demonstrates modern Node.js and Express.js development practices while maintaining simplicity for educational purposes.*

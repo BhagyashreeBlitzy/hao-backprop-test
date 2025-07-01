@@ -1,33 +1,72 @@
 ---
 name: Feature Request
-about: Suggest a new feature or enhancement for the Node.js Hello World application
-title: "[FEATURE] "
-labels: ['enhancement']
+about: Suggest an idea or enhancement for this project
+title: '[Feature Request] '
+labels: ['enhancement', 'feature request']
 assignees: []
 ---
 
 ## Feature Description
-A clear and concise description of the feature you're proposing.
 
-## Problem Statement
-Describe the problem or limitation that this feature would address. Ex. I'm always frustrated when [...]
+A clear and concise description of the feature being requested.
 
-## Proposed Solution
-Describe how you envision this feature working. Be as specific as possible about the behavior, interface, and implementation details if you have them.
+*Please provide a brief summary of the feature you would like to see implemented.*
 
-## Alternatives Considered
-Describe any alternative solutions or features you've considered that might solve the same problem.
+---
 
-## Implementation Impact
-- **Complexity**: Low/Medium/High - Your estimate of how complex this feature would be to implement
-- **Scope**: Which components would be affected (e.g., server, router, specific handlers)
-- **Dependencies**: Would this feature require new dependencies or changes to existing ones?
+## Is your feature request related to a problem?
 
-## Benefits
-Describe the benefits this feature would bring to users or developers of the application.
+**Is your feature request related to a problem? Please describe.**
 
-## Example Usage
-If applicable, provide examples of how this feature would be used (e.g., API calls, configuration examples, etc.).
+A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
 
-## Additional Context
-Add any other context, screenshots, diagrams, or references that help explain the feature request.
+*If this feature request is motivated by a specific problem or limitation you've encountered, please describe it here. This helps maintainers understand the context and importance of the request.*
+
+---
+
+## Describe the solution you'd like
+
+**Describe the solution you'd like**
+
+A clear and concise description of what you want to happen.
+
+*Please provide a detailed description of the desired solution or implementation. Include any specific behavior, functionality, or outcomes you expect from this feature.*
+
+---
+
+## Describe alternatives you've considered
+
+**Describe alternatives you've considered**
+
+A clear and concise description of any alternative solutions or features you've considered.
+
+*Have you considered other approaches to solving this problem? Please describe any alternatives you've evaluated and why they might not be suitable.*
+
+---
+
+## Additional context
+
+**Additional context**
+
+Add any other context, screenshots, mockups, or references about the feature request here.
+
+*Please provide any additional information that would help explain the feature request:*
+- Screenshots or mockups if applicable
+- Links to relevant documentation or similar implementations
+- Use cases or user stories
+- Technical considerations or constraints
+- Expected impact on existing functionality
+
+---
+
+<!-- 
+Thank you for taking the time to submit a feature request! 
+
+Before submitting, please:
+1. Search existing issues to avoid duplicates
+2. Ensure this is a feature request and not a bug report
+3. Provide as much relevant detail as possible
+4. Consider the scope and complexity of the requested feature
+
+Your contribution helps improve this project for everyone.
+-->
