@@ -1,0 +1,45 @@
+{
+  "name": "nodejs-hello-world-tutorial-backend",
+  "version": "1.0.0",
+  "description": "Node.js/Express.js Hello World tutorial backend. Demonstrates a single HTTP GET /hello endpoint with robust error handling, logging, and healthcheck.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node ./scripts/start.js",
+    "dev": "nodemon ./scripts/start.js",
+    "test": "node ./scripts/test.js",
+    "test:unit": "jest --config=jest.config.js --runTestsByPath src/test/unit",
+    "test:integration": "jest --config=jest.config.js --runTestsByPath src/test/integration",
+    "test:coverage": "jest --config=jest.config.js --coverage",
+    "lint": "eslint . --ext .js",
+    "format": "prettier --write ."
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "dependencies": {
+    "express": "5.1.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.1.1",
+    "nodemon": "^3.1.0",
+    "eslint": "^8.57.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "prettier": "^3.2.5",
+    "cross-env": "^7.0.3"
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "tutorial",
+    "hello-world",
+    "backend"
+  ],
+  "author": "Tutorial Author",
+  "license": "MIT"
+}
