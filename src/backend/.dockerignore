@@ -1,0 +1,54 @@
+# Node.js Dependencies
+node_modules
+
+# Package Manager Logs
+npm-debug.log
+yarn-error.log
+
+# Test Coverage and Testing
+coverage
+test
+test/
+src/backend/test
+src/backend/test/
+src/backend/test/helpers
+src/backend/test/unit
+src/backend/test/integration
+
+# Build Scripts and Development Tools
+src/backend/scripts
+src/backend/scripts/
+
+# Environment Configuration Files
+src/backend/.env
+src/backend/.env.*
+.env
+.env.*
+
+# Version Control
+.git
+.gitignore
+
+# Development Configuration
+.nvmrc
+.eslintrc.js
+.prettierrc
+
+# Docker Files
+Dockerfile
+docker-compose.yml
+
+# Documentation
+README.md
+
+# Package Lock Files
+package-lock.json
+
+# Testing Configuration
+jest.config.js
+
+# Development Tools
+nodemon.json
+
+# Application Logs
+*.log

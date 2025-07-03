@@ -1,0 +1,235 @@
+# Docker Compose configuration for Node.js Tutorial Backend
+# Version 3.8 for modern Docker Compose features and compatibility
+version: '3.8'
+
+# Define services for the Node.js tutorial application
+services:
+  # Backend service definition
+  backend:
+    # Build configuration using the production-ready Dockerfile
+    build:
+      context: ../src/backend
+      dockerfile: Dockerfile
+      # Build arguments for customization
+      args:
+        NODE_ENV: production
+        BUILD_DATE: ${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
+    
+    # Container naming for easy identification and management
+    container_name: nodejs-tutorial-backend
+    
+    # Port mapping - host:container
+    # Default port 3000 but configurable via environment variable
+    ports:
+      - "${HOST_PORT:-3000}:${CONTAINER_PORT:-3000}"
+    
+    # Environment file configuration
+    # Priority: .env (if exists) > .env.example (fallback)
+    # This supports both development and production environments
+    env_file:
+      - ../src/backend/.env.example
+      - ../src/backend/.env
+    
+    # Environment variables for runtime configuration
+    # These override values from env_file if specified
+    environment:
+      # Production environment for Express.js optimizations
+      - NODE_ENV=${NODE_ENV:-production}
+      # Container port configuration
+      - PORT=${CONTAINER_PORT:-3000}
+      # Host binding for container networking
+      - HOST=0.0.0.0
+      # Application identification
+      - APP_NAME=nodejs-tutorial-backend
+      - APP_VERSION=1.0.0
+      # Security configuration
+      - DISABLE_X_POWERED_BY=true
+      # Health check configuration
+      - HEALTH_CHECK_ENABLED=true
+      # Logging configuration
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      # Performance monitoring
+      - PERFORMANCE_MONITORING=${PERFORMANCE_MONITORING:-false}
+    
+    # Health check configuration for container orchestration
+    # Validates the /hello endpoint as per F-002 requirements
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://localhost:${CONTAINER_PORT:-3000}/hello"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+    
+    # Restart policy for production resilience
+    # Ensures the container restarts automatically unless explicitly stopped
+    restart: unless-stopped
+    
+    # Resource limits for predictable performance
+    # Prevents resource exhaustion in shared environments
+    deploy:
+      resources:
+        limits:
+          # Memory limit based on Node.js tutorial requirements
+          memory: 128M
+          # CPU limit for fair resource allocation
+          cpus: '0.5'
+        reservations:
+          # Reserved memory for consistent performance
+          memory: 64M
+          # Reserved CPU for baseline performance
+          cpus: '0.25'
+    
+    # Volume mounts for development and configuration
+    volumes:
+      # Development mode: mount source code for live reload
+      # Comment out for production deployment
+      - ../src/backend:/usr/src/app:cached
+      # Volume for node_modules to avoid conflicts
+      - nodejs_backend_node_modules:/usr/src/app/node_modules
+    
+    # Network configuration
+    networks:
+      - nodejs_tutorial_network
+    
+    # Dependencies and service relationships
+    depends_on:
+      - nodejs_tutorial_init
+    
+    # Logging configuration
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=nodejs-tutorial-backend"
+    
+    # Security configuration
+    security_opt:
+      - no-new-privileges:true
+    
+    # User and group configuration for security
+    # Uses the non-root user defined in Dockerfile
+    user: "1000:1000"
+    
+    # Labels for container management and monitoring
+    labels:
+      - "com.tutorial.service=backend"
+      - "com.tutorial.version=1.0.0"
+      - "com.tutorial.environment=${NODE_ENV:-production}"
+      - "com.tutorial.port=${CONTAINER_PORT:-3000}"
+      - "com.tutorial.description=Node.js Tutorial Backend with Express.js 5.1.0"
+      - "traefik.enable=false"
+      - "prometheus.scrape=true"
+      - "prometheus.port=${CONTAINER_PORT:-3000}"
+
+  # Initialization service for setup tasks
+  # Ensures proper environment preparation before backend starts
+  nodejs_tutorial_init:
+    image: alpine:latest
+    container_name: nodejs-tutorial-init
+    command: |
+      sh -c "
+        echo 'Initializing Node.js Tutorial Environment...'
+        echo 'Environment: ${NODE_ENV:-production}'
+        echo 'Port: ${CONTAINER_PORT:-3000}'
+        echo 'Host Port: ${HOST_PORT:-3000}'
+        echo 'Log Level: ${LOG_LEVEL:-info}'
+        echo 'Initialization complete.'
+      "
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - CONTAINER_PORT=${CONTAINER_PORT:-3000}
+      - HOST_PORT=${HOST_PORT:-3000}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    networks:
+      - nodejs_tutorial_network
+    restart: "no"
+    labels:
+      - "com.tutorial.service=init"
+      - "com.tutorial.version=1.0.0"
+
+# Named volumes for persistent data
+volumes:
+  # Node.js modules volume to prevent conflicts during development
+  nodejs_backend_node_modules:
+    driver: local
+    labels:
+      - "com.tutorial.volume=node_modules"
+      - "com.tutorial.description=Node.js modules for backend service"
+
+# Custom network for service isolation and communication
+networks:
+  nodejs_tutorial_network:
+    driver: bridge
+    name: nodejs_tutorial_network
+    labels:
+      - "com.tutorial.network=main"
+      - "com.tutorial.description=Main network for Node.js tutorial services"
+    driver_opts:
+      com.docker.network.bridge.name: "nodejs_tutorial_br"
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+
+# Service extension for development override
+# Uncomment and customize for local development
+# x-development-overrides: &development-overrides
+#   volumes:
+#     - ../src/backend:/usr/src/app:cached
+#     - nodejs_backend_node_modules:/usr/src/app/node_modules
+#   environment:
+#     - NODE_ENV=development
+#     - LOG_LEVEL=debug
+#     - DEV_MODE=true
+#     - CONSOLE_COLORS=true
+#   command: ["npm", "run", "dev"]
+
+# Configuration for different environments
+# Use with: docker-compose -f docker-compose.yml -f docker-compose.override.yml up
+# x-environment-configs:
+#   x-production: &production-config
+#     environment:
+#       - NODE_ENV=production
+#       - LOG_LEVEL=warn
+#       - PERFORMANCE_MONITORING=true
+#   
+#   x-development: &development-config
+#     environment:
+#       - NODE_ENV=development
+#       - LOG_LEVEL=debug
+#       - DEV_MODE=true
+#       - CONSOLE_COLORS=true
+#     volumes:
+#       - ../src/backend:/usr/src/app:cached
+#       - nodejs_backend_node_modules:/usr/src/app/node_modules
+#     command: ["npm", "run", "dev"]
+#   
+#   x-testing: &testing-config
+#     environment:
+#       - NODE_ENV=test
+#       - LOG_LEVEL=error
+#     command: ["npm", "test"]
+
+# Health check service for monitoring (optional)
+# Uncomment to enable external health monitoring
+# health_monitor:
+#   image: alpine:latest
+#   container_name: nodejs-tutorial-health-monitor
+#   command: |
+#     sh -c "
+#       while true; do
+#         echo 'Health check at $(date)'
+#         wget -q --spider http://backend:3000/hello && echo 'Backend: OK' || echo 'Backend: FAILED'
+#         sleep 60
+#       done
+#     "
+#   depends_on:
+#     - backend
+#   networks:
+#     - nodejs_tutorial_network
+#   restart: unless-stopped
+#   labels:
+#     - "com.tutorial.service=health-monitor"
+#     - "com.tutorial.version=1.0.0"

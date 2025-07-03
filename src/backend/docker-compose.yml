@@ -1,0 +1,218 @@
+# Docker Compose configuration for Node.js Tutorial Backend Service
+# Version 3.8 provides modern features while maintaining broad compatibility
+version: '3.8'
+
+# Define services that make up the application
+services:
+  # Backend service for the Node.js tutorial application
+  backend:
+    # Build configuration using the local Dockerfile
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # Build arguments for development/production flexibility
+      args:
+        - NODE_ENV=${NODE_ENV:-production}
+    
+    # Container name for easy identification and management
+    container_name: nodejs-tutorial-backend
+    
+    # Environment file for configuration management
+    # Loads variables from .env file in the same directory
+    env_file:
+      - .env
+    
+    # Environment variables with fallback defaults
+    # These override or supplement the .env file values
+    environment:
+      # Server configuration with secure defaults
+      PORT: ${PORT:-3000}
+      HOST: ${HOST:-0.0.0.0}
+      NODE_ENV: ${NODE_ENV:-production}
+      
+      # Application identification
+      APP_NAME: ${APP_NAME:-nodejs-hello-tutorial}
+      APP_VERSION: ${APP_VERSION:-1.0.0}
+      
+      # Logging configuration
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      
+      # Security configuration
+      DISABLE_X_POWERED_BY: ${DISABLE_X_POWERED_BY:-true}
+      
+      # Development and monitoring settings
+      DEV_MODE: ${DEV_MODE:-false}
+      CONSOLE_COLORS: ${CONSOLE_COLORS:-true}
+      HEALTH_CHECK_ENABLED: ${HEALTH_CHECK_ENABLED:-true}
+      PERFORMANCE_MONITORING: ${PERFORMANCE_MONITORING:-false}
+      
+      # Request timeout configuration
+      REQUEST_TIMEOUT: ${REQUEST_TIMEOUT:-30000}
+    
+    # Port mapping for external access
+    # Maps host port to container port (configurable via environment variables)
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    
+    # Volume mounts for development and data persistence
+    volumes:
+      # Mount source code for development hot-reloading
+      # This enables live code changes without rebuilding the container
+      - ./:/usr/src/app
+      
+      # Exclude node_modules from volume mount to prevent conflicts
+      # This uses an anonymous volume to preserve container's node_modules
+      - /usr/src/app/node_modules
+      
+      # Mount package files for dependency management
+      - ./package.json:/usr/src/app/package.json:ro
+      - ./package-lock.json:/usr/src/app/package-lock.json:ro
+    
+    # Health check configuration matching the Dockerfile
+    # Verifies the /hello endpoint is responsive for container orchestration
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT:-3000}/hello"]
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+    
+    # Restart policy for production resilience
+    # Ensures the container restarts automatically unless explicitly stopped
+    restart: unless-stopped
+    
+    # Network configuration for service discovery
+    networks:
+      - tutorial-network
+    
+    # Resource limits for production stability
+    deploy:
+      resources:
+        limits:
+          # Limit memory usage to prevent resource exhaustion
+          memory: 256M
+          # Limit CPU usage for fair resource sharing
+          cpus: '0.5'
+        reservations:
+          # Reserve minimum resources for reliable operation
+          memory: 128M
+          cpus: '0.1'
+    
+    # Dependency management for service ordering
+    depends_on:
+      # Future services can be added here (e.g., database, cache)
+      # For now, this ensures proper startup order if extended
+      - tutorial-network
+    
+    # Security options for enhanced container security
+    security_opt:
+      # Disable new privilege escalation
+      - no-new-privileges:true
+    
+    # User configuration for security (matches Dockerfile)
+    user: "1000:1000"
+    
+    # Working directory (matches Dockerfile)
+    working_dir: /usr/src/app
+    
+    # Labels for container metadata and organization
+    labels:
+      # Service identification
+      com.tutorial.service: "backend"
+      com.tutorial.version: "${APP_VERSION:-1.0.0}"
+      com.tutorial.environment: "${NODE_ENV:-production}"
+      
+      # Educational metadata
+      com.tutorial.purpose: "educational"
+      com.tutorial.technology: "nodejs"
+      com.tutorial.framework: "express"
+      
+      # Operational metadata
+      com.tutorial.port: "${PORT:-3000}"
+      com.tutorial.healthcheck: "/hello"
+      com.tutorial.maintenance: "tutorial-authors"
+      
+      # Docker Compose metadata
+      com.docker.compose.project: "nodejs-tutorial"
+      com.docker.compose.service: "backend"
+      com.docker.compose.config-hash: "tutorial-backend-v1"
+    
+    # Logging configuration for operational observability
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+        labels: "com.tutorial.service,com.tutorial.environment"
+    
+    # Ulimits for process resource management
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+      nproc:
+        soft: 32768
+        hard: 32768
+    
+    # Stdin and TTY configuration for development
+    stdin_open: true
+    tty: true
+    
+    # Additional environment-specific configurations
+    profiles:
+      # Development profile for enhanced debugging
+      - development
+      - production
+      - testing
+
+# Network configuration for service communication
+networks:
+  tutorial-network:
+    driver: bridge
+    name: nodejs-tutorial-network
+    
+    # Network labels for identification
+    labels:
+      com.tutorial.network: "backend"
+      com.tutorial.purpose: "educational"
+      com.tutorial.isolation: "development"
+    
+    # IPAM configuration for network management
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+    
+    # Network options for performance and security
+    driver_opts:
+      com.docker.network.bridge.name: "tutorial-bridge"
+      com.docker.network.bridge.enable_icc: "true"
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+      com.docker.network.bridge.host_binding_ipv4: "0.0.0.0"
+      com.docker.network.driver.mtu: "1500"
+
+# Volume configuration for data persistence
+volumes:
+  # Node modules volume for dependency isolation
+  node_modules:
+    driver: local
+    name: nodejs-tutorial-node-modules
+    
+    # Volume labels for identification
+    labels:
+      com.tutorial.volume: "dependencies"
+      com.tutorial.purpose: "isolation"
+      com.tutorial.cleanup: "development-only"
+  
+  # Logs volume for persistent logging
+  app_logs:
+    driver: local
+    name: nodejs-tutorial-logs
+    
+    # Volume labels for identification
+    labels:
+      com.tutorial.volume: "logs"
+      com.tutorial.purpose: "observability"
+      com.tutorial.retention: "7-days"
