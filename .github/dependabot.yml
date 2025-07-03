@@ -1,0 +1,83 @@
+# Dependabot configuration for automated dependency management
+# This configuration ensures npm dependencies in the backend are kept secure and up-to-date
+# with Express.js 5.1.0+ compatibility requirements and security best practices
+
+version: 2
+
+updates:
+  # NPM package ecosystem configuration for backend dependencies
+  - package-ecosystem: "npm"
+    directory: "/src/backend"
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "UTC"
+    
+    # Limit concurrent pull requests to prevent overwhelming the review process
+    open-pull-requests-limit: 10
+    
+    # Allow all types of dependency updates (direct, indirect, development)
+    allow:
+      - dependency-type: "all"
+    
+    # Ignore specific package versions that don't meet security requirements
+    ignore:
+      # Express.js versions below 5.1.0 have known security vulnerabilities
+      # and compatibility issues - only allow 5.1.0+ as per tech specifications
+      - dependency-name: "express"
+        versions: ["< 5.1.0"]
+    
+    # Customize commit messages for dependency updates
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+      include: "scope"
+    
+    # Apply consistent labeling for automated dependency PRs
+    labels:
+      - "dependencies"
+      - "npm"
+      - "auto-approve"
+      - "security"
+    
+    # Configure pull request settings for better review process
+    pull-request-branch-name:
+      separator: "/"
+    
+    # Review assignment configuration
+    reviewers:
+      - "dependabot[bot]"
+    
+    # Enable automatic rebasing to keep PRs current
+    rebase-strategy: "auto"
+    
+    # Target branch for dependency updates
+    target-branch: "main"
+    
+    # Milestone assignment for dependency updates
+    milestone: "Dependency Updates"
+    
+    # Additional security and maintenance configurations
+    enable-beta-ecosystems: false
+    
+    # Vendor dependency management
+    vendor: true
+    
+    # Insecure external code execution prevention
+    insecure-external-code-execution: "deny"
+
+  # Health check for GitHub Actions workflows (if present)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(ci)"
+    labels:
+      - "ci"
+      - "github-actions"
+      - "auto-approve"
