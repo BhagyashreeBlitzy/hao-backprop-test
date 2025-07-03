@@ -1,0 +1,59 @@
+# Dependencies
+# Ignore all installed npm dependencies. These are restored via package.json and package-lock.json.
+node_modules/
+
+# Logs
+# Ignore log output directories.
+logs/
+# Ignore all log files generated during development or runtime.
+*.log
+# Ignore npm debug logs.
+npm-debug.log*
+# Ignore yarn debug logs.
+yarn-debug.log*
+# Ignore yarn error logs.
+yarn-error.log*
+
+# Runtime data
+# Ignore process ID files.
+pids/
+# Ignore process ID files.
+*.pid
+
+# Environment variables
+# Ignore environment variable files containing sensitive configuration.
+.env
+# Ignore all environment-specific .env files.
+.env.*
+
+# Coverage directory used by tools like istanbul
+# Ignore code coverage output from test runs.
+coverage/
+
+# Build output
+# Ignore build output directory (if any).
+dist/
+
+# Temporary files
+# Ignore temporary files and directories.
+tmp/
+# Ignore temporary files and directories.
+temp/
+
+# Editor files
+# Ignore swap files created by editors like vim.
+*.swp
+# Ignore swap files created by editors like vim.
+*.swo
+
+# Operating system files
+# Ignore macOS Finder metadata files.
+.DS_Store
+# Ignore Windows Explorer metadata files.
+Thumbs.db
+
+# IDE and editor settings
+# Ignore Visual Studio Code workspace settings.
+.vscode/
+# Ignore JetBrains IDE project settings.
+.idea/
