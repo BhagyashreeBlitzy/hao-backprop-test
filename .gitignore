@@ -1,36 +1,63 @@
-# Node.js specific
+# Node.js Dependencies
+# Ignore all installed npm dependencies. These are restored via package.json and package-lock.json.
 node_modules/
-npm-debug.log
-yarn-debug.log
-yarn-error.log
-.npm
-.yarn
-package-lock.json
-yarn.lock
-
-# Environment and configuration
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# IDE and editor files
-.idea/
-.vscode/
-*.swp
-*.swo
-.DS_Store
-
-# Build and output directories
-dist/
-build/
-coverage/
 
 # Logs
-logs
+# Ignore log output directories.
+logs/
+# Ignore all log files generated during development or runtime.
 *.log
+# Ignore npm debug logs.
+npm-debug.log*
+# Ignore yarn debug logs.
+yarn-debug.log*
+# Ignore yarn error logs.
+yarn-error.log*
 
-# Temporary files
+# Process Files
+# Ignore process ID files.
+pids/
+# Ignore process ID files.
+*.pid
+
+# Environment Variables
+# Ignore environment variable files containing sensitive configuration.
+.env
+# Ignore all environment-specific .env files.
+.env.*
+
+# Coverage and Test Output
+# Ignore code coverage output from test runs.
+coverage/
+# Ignore test output and test helper directories.
+test/
+
+# Build and Distribution
+# Ignore build output directory (if any).
+dist/
+# Ignore build artifacts (if any).
+build/
+
+# Temporary Files
+# Ignore temporary files and directories.
 tmp/
+# Ignore temporary files and directories.
 temp/
+
+# Editor Files
+# Ignore swap files created by editors like vim.
+*.swp
+# Ignore swap files created by editors like vim.
+*.swo
+
+# Operating System Files
+# Ignore macOS Finder metadata files.
+.DS_Store
+# Ignore Windows Explorer metadata files.
+Thumbs.db
+
+# IDE and Editor Settings
+# Ignore Visual Studio Code workspace settings.
+.vscode/
+# Ignore JetBrains IDE project settings.
+.idea/
