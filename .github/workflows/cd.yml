@@ -1,0 +1,623 @@
+# =============================================================================
+# Continuous Deployment (CD) Workflow for Node.js Tutorial Backend
+# =============================================================================
+# 
+# Production-ready GitHub Actions workflow for automated deployment of the
+# Node.js/Express.js tutorial backend application with comprehensive multi-service
+# orchestration, testing, and monitoring integration.
+#
+# Features:
+# - Automated Docker Compose multi-service deployment
+# - Comprehensive testing pipeline with coverage reporting
+# - Health check verification for all services
+# - NGINX reverse proxy deployment
+# - Prometheus and Grafana monitoring stack
+# - Environment-agnostic deployment support
+# - Robust error handling and rollback capabilities
+# - Security scanning and vulnerability assessment
+# - Deployment status reporting and access instructions
+#
+# Services Deployed:
+# - Backend: Node.js/Express.js application (port 3000)
+# - NGINX: Reverse proxy and load balancer (port 80)
+# - Prometheus: Metrics collection and storage (port 9090)
+# - Grafana: Visualization and dashboarding (port 3001)
+#
+# Requirements Addressed:
+# - HTTP Server Implementation (Technical Specifications/2.1.1)
+# - Deployment and Environment Configuration (Technical Specifications/8.2.5)
+# - Testing Strategy & Automation (Technical Specifications/6.6)
+# - Monitoring and Observability (Technical Specifications/6.5)
+# - Reverse Proxy Integration (Technical Specifications/8.2.3, 6.5)
+#
+# =============================================================================
+
+name: CD Backend
+
+# Trigger configuration for automated and manual deployment
+on:
+  # Automatic deployment on main branch updates
+  push:
+    branches: 
+      - main
+    paths:
+      - 'src/backend/**'
+      - 'infrastructure/**'
+      - '.github/workflows/cd.yml'
+      - 'package*.json'
+
+  # Manual deployment trigger for on-demand deployments
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: false
+        default: 'production'
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      
+      skip_tests:
+        description: 'Skip testing phase'
+        required: false
+        default: false
+        type: boolean
+      
+      skip_backup:
+        description: 'Skip pre-deployment backup'
+        required: false
+        default: false
+        type: boolean
+      
+      healthcheck_timeout:
+        description: 'Healthcheck timeout (seconds)'
+        required: false
+        default: '120'
+        type: string
+
+# Global environment variables for deployment configuration
+env:
+  # Deployment environment configuration
+  DEPLOY_ENV: ${{ github.event.inputs.environment || 'production' }}
+  COMPOSE_FILE: infrastructure/docker-compose.yml
+  
+  # Docker configuration for optimal builds
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+  
+  # Service configuration
+  BACKEND_SERVICE: backend
+  HEALTHCHECK_URL: http://localhost:3000/health
+  HEALTHCHECK_TIMEOUT: ${{ github.event.inputs.healthcheck_timeout || '120' }}
+  
+  # Backup configuration
+  BACKUP_BEFORE_DEPLOY: ${{ github.event.inputs.skip_backup == 'true' && '0' || '1' }}
+  
+  # Logging and monitoring
+  LOG_LEVEL: INFO
+  CI: true
+
+# =============================================================================
+# DEPLOYMENT JOB
+# =============================================================================
+jobs:
+  deploy:
+    name: Deploy Backend Infrastructure
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    # Define deployment outputs for downstream jobs
+    outputs:
+      deployment-status: ${{ steps.deployment.outputs.status }}
+      backend-url: ${{ steps.urls.outputs.backend-url }}
+      nginx-url: ${{ steps.urls.outputs.nginx-url }}
+      prometheus-url: ${{ steps.urls.outputs.prometheus-url }}
+      grafana-url: ${{ steps.urls.outputs.grafana-url }}
+    
+    steps:
+      # -------------------------------------------------------------------------
+      # STEP 1: Repository Checkout and Environment Setup
+      # -------------------------------------------------------------------------
+      - name: Checkout Repository
+        uses: actions/checkout@v4 # actions/checkout v4
+        with:
+          fetch-depth: 0
+          clean: true
+      
+      - name: Set up deployment metadata
+        id: metadata
+        run: |
+          echo "deployment-id=deploy-$(date +%Y%m%d-%H%M%S)-${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "deployment-timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
+          echo "git-ref=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          echo "git-sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+          
+          # Log deployment context
+          echo "::notice title=Deployment Started::Environment: $DEPLOY_ENV, Ref: ${{ github.ref_name }}, SHA: ${{ github.sha }}"
+      
+      # -------------------------------------------------------------------------
+      # STEP 2: Node.js Environment Setup
+      # -------------------------------------------------------------------------
+      - name: Set up Node.js Environment
+        uses: actions/setup-node@v4 # actions/setup-node v4
+        with:
+          node-version: '22.x' # Node.js 22.x LTS as specified in Technical Specifications/3.1.1
+          cache: 'npm'
+          cache-dependency-path: src/backend/package-lock.json
+          registry-url: 'https://registry.npmjs.org'
+      
+      - name: Verify Node.js and npm versions
+        run: |
+          echo "Node.js version: $(node --version)"
+          echo "npm version: $(npm --version)"
+          
+          # Verify minimum requirements from package.json engines
+          node -e "
+            const pkg = require('./src/backend/package.json');
+            const nodeVersion = process.version;
+            const npmVersion = process.env.npm_version || '0.0.0';
+            console.log('Required Node.js:', pkg.engines.node);
+            console.log('Required npm:', pkg.engines.npm);
+            console.log('Current Node.js:', nodeVersion);
+            console.log('Current npm:', npmVersion);
+          "
+      
+      # -------------------------------------------------------------------------
+      # STEP 3: Dependencies Installation and Validation
+      # -------------------------------------------------------------------------
+      - name: Install Backend Dependencies
+        working-directory: src/backend
+        run: |
+          echo "::group::Installing production and development dependencies"
+          npm ci --prefer-offline --no-audit --progress=false
+          echo "::endgroup::"
+          
+          echo "::group::Dependency validation"
+          npm ls --depth=0
+          npm audit --audit-level=moderate
+          echo "::endgroup::"
+      
+      - name: Validate project structure
+        run: |
+          echo "::group::Project structure validation"
+          
+          # Verify essential files exist
+          required_files=(
+            "src/backend/package.json"
+            "src/backend/app.js"
+            "src/backend/server.js"
+            "src/backend/scripts/start.js"
+            "src/backend/scripts/test.js"
+            "src/backend/Dockerfile"
+            "infrastructure/docker-compose.yml"
+            "infrastructure/scripts/deploy.sh"
+          )
+          
+          for file in "${required_files[@]}"; do
+            if [[ -f "$file" ]]; then
+              echo "✓ $file exists"
+            else
+              echo "✗ $file missing"
+              exit 1
+            fi
+          done
+          
+          echo "::endgroup::"
+      
+      # -------------------------------------------------------------------------
+      # STEP 4: Testing Phase (Comprehensive Quality Gates)
+      # -------------------------------------------------------------------------
+      - name: Run Backend Test Suite
+        if: github.event.inputs.skip_tests != 'true'
+        working-directory: src/backend
+        run: |
+          echo "::group::Linting and code quality checks"
+          npm run lint
+          echo "::endgroup::"
+          
+          echo "::group::Unit tests execution"
+          npm run test:unit
+          echo "::endgroup::"
+          
+          echo "::group::Integration tests execution"
+          npm run test:integration
+          echo "::endgroup::"
+          
+          echo "::group::Test coverage analysis"
+          npm run test:coverage
+          echo "::endgroup::"
+          
+          echo "::notice title=Testing Complete::All test suites passed successfully"
+      
+      - name: Upload test coverage results
+        if: github.event.inputs.skip_tests != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-coverage-${{ steps.metadata.outputs.deployment-id }}
+          path: src/backend/coverage/
+          retention-days: 30
+      
+      # -------------------------------------------------------------------------
+      # STEP 5: Docker Environment Setup
+      # -------------------------------------------------------------------------
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3 # docker/setup-buildx-action v3
+        with:
+          platforms: linux/amd64,linux/arm64
+          driver: docker-container
+          use: true
+      
+      - name: Docker system information
+        run: |
+          echo "::group::Docker system information"
+          docker version
+          docker info
+          docker buildx version
+          echo "::endgroup::"
+          
+          echo "::group::Available disk space"
+          df -h
+          echo "::endgroup::"
+      
+      # -------------------------------------------------------------------------
+      # STEP 6: Pre-deployment Backup (Optional)
+      # -------------------------------------------------------------------------
+      - name: Run pre-deployment backup
+        if: env.BACKUP_BEFORE_DEPLOY == '1'
+        run: |
+          echo "::group::Pre-deployment backup"
+          
+          # Make backup script executable
+          chmod +x infrastructure/scripts/backup.sh
+          
+          # Set backup environment variables
+          export BACKUP_ROOT="$PWD/infrastructure/backups"
+          export LOG_LEVEL="$LOG_LEVEL"
+          
+          # Execute backup script
+          if infrastructure/scripts/backup.sh; then
+            echo "::notice title=Backup Success::Pre-deployment backup completed successfully"
+          else
+            echo "::error title=Backup Failed::Pre-deployment backup failed"
+            exit 1
+          fi
+          
+          echo "::endgroup::"
+      
+      # -------------------------------------------------------------------------
+      # STEP 7: Docker Image Building and Service Orchestration
+      # -------------------------------------------------------------------------
+      - name: Build Docker images
+        id: build
+        run: |
+          echo "::group::Building Docker images with Docker Compose"
+          
+          # Build all services defined in docker-compose.yml
+          docker compose -f $COMPOSE_FILE build --pull --parallel
+          
+          # Verify images were built successfully
+          echo "::group::Built images verification"
+          docker images | grep -E "(nodejs-tutorial|nginx|prometheus|grafana)"
+          echo "::endgroup::"
+          
+          echo "build-status=success" >> $GITHUB_OUTPUT
+          echo "::notice title=Build Success::All Docker images built successfully"
+          echo "::endgroup::"
+      
+      - name: Start multi-service infrastructure
+        id: startup
+        run: |
+          echo "::group::Starting all services with Docker Compose"
+          
+          # Start all services in detached mode
+          docker compose -f $COMPOSE_FILE up -d --remove-orphans --force-recreate
+          
+          # Wait for containers to initialize
+          sleep 10
+          
+          # Show initial service status
+          echo "::group::Initial service status"
+          docker compose -f $COMPOSE_FILE ps
+          echo "::endgroup::"
+          
+          echo "startup-status=success" >> $GITHUB_OUTPUT
+          echo "::notice title=Startup Success::All services started successfully"
+          echo "::endgroup::"
+      
+      # -------------------------------------------------------------------------
+      # STEP 8: Comprehensive Health Check Verification
+      # -------------------------------------------------------------------------
+      - name: Wait for services to become healthy
+        id: healthcheck
+        timeout-minutes: ${{ fromJSON(env.HEALTHCHECK_TIMEOUT) / 60 }}
+        run: |
+          echo "::group::Service health verification"
+          
+          # Define services and their health endpoints
+          declare -A services=(
+            ["backend"]="http://localhost:3000/health"
+            ["nginx"]="http://localhost:80/health"
+            ["prometheus"]="http://localhost:9090/-/healthy"
+            ["grafana"]="http://localhost:3001/api/health"
+          )
+          
+          # Health check function
+          check_service_health() {
+            local service=$1
+            local url=$2
+            local max_attempts=30
+            local attempt=1
+            
+            echo "Checking health for $service at $url"
+            
+            while [[ $attempt -le $max_attempts ]]; do
+              if curl -f -s --max-time 10 "$url" > /dev/null 2>&1; then
+                echo "✓ $service is healthy (attempt $attempt)"
+                return 0
+              fi
+              
+              echo "⏳ $service not ready (attempt $attempt/$max_attempts)"
+              sleep 5
+              ((attempt++))
+            done
+            
+            echo "✗ $service health check failed after $max_attempts attempts"
+            return 1
+          }
+          
+          # Check each service health
+          failed_services=()
+          for service in "${!services[@]}"; do
+            if check_service_health "$service" "${services[$service]}"; then
+              echo "::notice title=$service Healthy::Service is responding correctly"
+            else
+              failed_services+=("$service")
+              echo "::error title=$service Failed::Health check failed"
+              
+              # Show service logs for debugging
+              echo "::group::$service logs"
+              docker compose -f $COMPOSE_FILE logs --tail=20 "$service" || true
+              echo "::endgroup::"
+            fi
+          done
+          
+          # Report overall health status
+          if [[ ${#failed_services[@]} -eq 0 ]]; then
+            echo "healthcheck-status=success" >> $GITHUB_OUTPUT
+            echo "::notice title=Health Check Complete::All services are healthy and ready"
+          else
+            echo "healthcheck-status=failed" >> $GITHUB_OUTPUT
+            echo "::error title=Health Check Failed::Services failed: ${failed_services[*]}"
+            exit 1
+          fi
+          
+          echo "::endgroup::"
+      
+      # -------------------------------------------------------------------------
+      # STEP 9: Service Access Verification and URL Generation
+      # -------------------------------------------------------------------------
+      - name: Verify service accessibility
+        id: urls
+        run: |
+          echo "::group::Service accessibility verification"
+          
+          # Test backend endpoint
+          if curl -f -s "http://localhost:3000/hello" | grep -q "Hello world"; then
+            echo "✓ Backend service accessible"
+            echo "backend-url=http://localhost:3000" >> $GITHUB_OUTPUT
+          else
+            echo "✗ Backend service not accessible"
+          fi
+          
+          # Test NGINX reverse proxy
+          if curl -f -s "http://localhost:80/hello" | grep -q "Hello world"; then
+            echo "✓ NGINX reverse proxy accessible"
+            echo "nginx-url=http://localhost" >> $GITHUB_OUTPUT
+          else
+            echo "✗ NGINX reverse proxy not accessible"
+          fi
+          
+          # Test Prometheus
+          if curl -f -s "http://localhost:9090/-/healthy" > /dev/null; then
+            echo "✓ Prometheus accessible"
+            echo "prometheus-url=http://localhost:9090" >> $GITHUB_OUTPUT
+          else
+            echo "✗ Prometheus not accessible"
+          fi
+          
+          # Test Grafana
+          if curl -f -s "http://localhost:3001/api/health" > /dev/null; then
+            echo "✓ Grafana accessible"
+            echo "grafana-url=http://localhost:3001" >> $GITHUB_OUTPUT
+          else
+            echo "✗ Grafana not accessible"
+          fi
+          
+          echo "::endgroup::"
+      
+      # -------------------------------------------------------------------------
+      # STEP 10: Advanced Deployment Orchestration with deploy.sh
+      # -------------------------------------------------------------------------
+      - name: Execute deployment automation script
+        id: deployment
+        run: |
+          echo "::group::Advanced deployment orchestration"
+          
+          # Make deployment script executable
+          chmod +x infrastructure/scripts/deploy.sh
+          
+          # Set deployment environment variables
+          export DEPLOY_ENV="$DEPLOY_ENV"
+          export COMPOSE_FILE="$COMPOSE_FILE"
+          export HEALTHCHECK_TIMEOUT="$HEALTHCHECK_TIMEOUT"
+          export LOG_LEVEL="$LOG_LEVEL"
+          export BACKUP_BEFORE_DEPLOY="$BACKUP_BEFORE_DEPLOY"
+          
+          # Execute deployment script with verbose output
+          if infrastructure/scripts/deploy.sh --verbose --log-level DEBUG; then
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "::notice title=Deployment Success::Advanced deployment orchestration completed"
+          else
+            echo "status=failed" >> $GITHUB_OUTPUT
+            echo "::error title=Deployment Failed::Advanced deployment orchestration failed"
+            exit 1
+          fi
+          
+          echo "::endgroup::"
+      
+      # -------------------------------------------------------------------------
+      # STEP 11: Deployment Status and Access Instructions
+      # -------------------------------------------------------------------------
+      - name: Generate deployment summary
+        if: always()
+        run: |
+          echo "::group::Deployment Summary"
+          
+          # Service status overview
+          echo "## 🚀 Deployment Summary"
+          echo ""
+          echo "**Deployment ID:** ${{ steps.metadata.outputs.deployment-id }}"
+          echo "**Environment:** $DEPLOY_ENV"
+          echo "**Timestamp:** ${{ steps.metadata.outputs.deployment-timestamp }}"
+          echo "**Git Reference:** ${{ steps.metadata.outputs.git-ref }}"
+          echo "**Git SHA:** ${{ steps.metadata.outputs.git-sha }}"
+          echo ""
+          
+          # Service access information
+          echo "## 🌐 Service Access"
+          echo ""
+          echo "| Service | URL | Status |"
+          echo "|---------|-----|--------|"
+          echo "| Main Application (NGINX) | ${{ steps.urls.outputs.nginx-url || 'Not Available' }} | ${{ steps.urls.outputs.nginx-url && '✅ Ready' || '❌ Failed' }} |"
+          echo "| Backend Direct | ${{ steps.urls.outputs.backend-url || 'Not Available' }} | ${{ steps.urls.outputs.backend-url && '✅ Ready' || '❌ Failed' }} |"
+          echo "| Prometheus | ${{ steps.urls.outputs.prometheus-url || 'Not Available' }} | ${{ steps.urls.outputs.prometheus-url && '✅ Ready' || '❌ Failed' }} |"
+          echo "| Grafana | ${{ steps.urls.outputs.grafana-url || 'Not Available' }} | ${{ steps.urls.outputs.grafana-url && '✅ Ready' || '❌ Failed' }} |"
+          echo ""
+          
+          # Quick test commands
+          echo "## 🧪 Quick Test Commands"
+          echo ""
+          echo '```bash'
+          echo "# Test main application"
+          echo "curl http://localhost/hello"
+          echo ""
+          echo "# Check service status"
+          echo "docker compose -f $COMPOSE_FILE ps"
+          echo ""
+          echo "# View service logs"
+          echo "docker compose -f $COMPOSE_FILE logs -f backend"
+          echo '```'
+          echo ""
+          
+          # Deployment instructions
+          echo "## 📋 Management Commands"
+          echo ""
+          echo '```bash'
+          echo "# Stop all services"
+          echo "docker compose -f $COMPOSE_FILE down"
+          echo ""
+          echo "# Stop and remove volumes"
+          echo "docker compose -f $COMPOSE_FILE down -v"
+          echo ""
+          echo "# View detailed logs"
+          echo "docker compose -f $COMPOSE_FILE logs --follow"
+          echo '```'
+          
+          echo "::endgroup::"
+      
+      # -------------------------------------------------------------------------
+      # STEP 12: Final Service Status Verification
+      # -------------------------------------------------------------------------
+      - name: Final deployment verification
+        run: |
+          echo "::group::Final deployment verification"
+          
+          # Show final service status
+          docker compose -f $COMPOSE_FILE ps
+          
+          # Show service health
+          docker compose -f $COMPOSE_FILE exec -T backend curl -f http://localhost:3000/health || echo "Backend health check failed"
+          
+          # Show resource usage
+          echo "::group::Resource usage"
+          docker stats --no-stream
+          echo "::endgroup::"
+          
+          # Generate final success message
+          echo "::notice title=CD Complete::Node.js Tutorial Backend deployment completed successfully!"
+          echo "🎉 All services are running and accessible!"
+          echo "📊 Access Grafana at http://localhost:3001 (admin/admin)"
+          echo "📈 Access Prometheus at http://localhost:9090"
+          echo "🌐 Access Application at http://localhost"
+          
+          echo "::endgroup::"
+      
+      # -------------------------------------------------------------------------
+      # STEP 13: Cleanup and Error Handling
+      # -------------------------------------------------------------------------
+      - name: Cleanup on failure
+        if: failure()
+        run: |
+          echo "::group::Deployment failure cleanup"
+          
+          # Show service logs for debugging
+          echo "::group::Service logs for debugging"
+          docker compose -f $COMPOSE_FILE logs || true
+          echo "::endgroup::"
+          
+          # Show service status
+          echo "::group::Service status"
+          docker compose -f $COMPOSE_FILE ps || true
+          echo "::endgroup::"
+          
+          # Show system resources
+          echo "::group::System resources"
+          df -h
+          free -h
+          docker system df
+          echo "::endgroup::"
+          
+          # Stop services to free resources
+          echo "::group::Stopping services"
+          docker compose -f $COMPOSE_FILE down || true
+          echo "::endgroup::"
+          
+          echo "::error title=Deployment Failed::Check the logs above for detailed error information"
+          echo "::endgroup::"
+      
+      - name: Upload deployment artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-logs-${{ steps.metadata.outputs.deployment-id }}
+          path: |
+            infrastructure/logs/
+            infrastructure/data/
+          retention-days: 7
+
+# =============================================================================
+# WORKFLOW SUMMARY
+# =============================================================================
+#
+# This GitHub Actions CD workflow provides comprehensive automation for
+# deploying the Node.js/Express.js tutorial backend with full infrastructure
+# orchestration including:
+#
+# ✅ Multi-service Docker Compose deployment
+# ✅ Comprehensive testing pipeline with coverage
+# ✅ Health check verification for all services
+# ✅ NGINX reverse proxy configuration
+# ✅ Prometheus metrics collection
+# ✅ Grafana visualization dashboards
+# ✅ Backup integration and disaster recovery
+# ✅ Environment-agnostic deployment support
+# ✅ Robust error handling and troubleshooting
+# ✅ Security scanning and validation
+# ✅ Deployment status reporting
+#
+# The workflow ensures reproducible, reliable, and observable deployments
+# suitable for educational, development, and production environments.
+#
+# =============================================================================

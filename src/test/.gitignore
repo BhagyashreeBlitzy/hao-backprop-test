@@ -1,0 +1,93 @@
+# Test Output Management
+# Ensure that test output files, such as coverage reports and temporary test artifacts,
+# are not committed to the repository. This maintains repository cleanliness and prevents
+# accidental inclusion of large or unnecessary files.
+
+# Coverage Data Exclusion
+# Exclude code coverage output directories and files from version control to avoid
+# polluting the repository with generated data.
+coverage/
+coverage.*
+*.lcov
+.nyc_output/
+
+# Test Results and Reports
+# Prevent test result files and reports from being tracked
+test-results/
+output/
+reports/
+
+# Temporary Files
+# Prevent temporary files, logs, and other non-source artifacts from being tracked
+# in version control, supporting best practices for build and test environments.
+*.tmp
+*.temp
+*.log
+
+# TypeScript Build Information
+# Exclude TypeScript build information files that are generated during testing
+*.tsbuildinfo
+
+# Jest Coverage Directory
+# Jest generates coverage reports in coverage directory by default
+coverage/
+
+# Mocha and other test framework outputs
+# Various test frameworks may generate output files
+mochawesome-report/
+.nyc_output/
+
+# Node.js specific temporary files
+# Generated during testing and development
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+.env.test
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Stores VSCode versions used for testing
+.vscode-test
+
+# yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*

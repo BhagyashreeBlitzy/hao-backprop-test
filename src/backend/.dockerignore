@@ -1,0 +1,32 @@
+# Dependency directories
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+test/
+*.test.js
+*.spec.js
+jest.config.js
+
+# Environment variables and secrets
+.env
+.env.*
+
+# Version control
+.git/
+.gitignore
+
+# Development tools and configuration
+.eslintrc.js
+.prettierrc.js
+nodemon.json
+
+# Documentation
+README.md
+
+# Docker files
+Dockerfile
+.dockerignore

@@ -1,0 +1,644 @@
+# =============================================================================
+# Docker Compose Configuration for Node.js Tutorial Backend
+# =============================================================================
+# Production-ready orchestration for Node.js/Express.js tutorial backend service,
+# NGINX reverse proxy, and comprehensive monitoring stack (Prometheus and Grafana).
+# Provides unified, reproducible, and educational multi-container environment
+# for development, testing, and demonstration purposes.
+#
+# Version: 1.0.0
+# Compatibility: Docker Compose 3.8+
+# Services: Backend (Node.js/Express.js), NGINX, Prometheus, Grafana
+# Architecture: Reverse proxy with monitoring and observability
+#
+# Key Features:
+# - Containerized Node.js/Express.js backend with multi-stage builds
+# - NGINX reverse proxy for production-like HTTP routing
+# - Prometheus metrics collection with custom scraping configuration
+# - Grafana visualization with pre-configured dashboards
+# - Comprehensive health checks and restart policies
+# - Volume persistence for monitoring data and configuration
+# - Environment variable management and security best practices
+# - Inter-service networking with proper dependency management
+#
+# Requirements Addressed:
+# - HTTP Server Implementation & Deployment (2.1.1, 8.2.3)
+# - Reverse Proxy Integration (8.2.3, 6.5)
+# - Monitoring and Observability (6.5)
+# - Healthcheck and Error Management (1.3.1, 6.5)
+# - Environment Configuration & Portability (8.2.5)
+#
+# Usage:
+#   docker-compose up --build              # Build and start all services
+#   docker-compose up -d                   # Run in detached mode
+#   docker-compose down                    # Stop and remove containers
+#   docker-compose logs backend            # View backend service logs
+#   docker-compose ps                      # Check service status
+#
+# Service Access:
+#   - Application: http://localhost (via NGINX reverse proxy)
+#   - Backend Direct: http://localhost:3000 (development access)
+#   - Prometheus: http://localhost:9090 (metrics collection)
+#   - Grafana: http://localhost:3001 (login: admin/admin)
+# =============================================================================
+
+# Docker Compose format version - 3.8 provides full feature support
+# including healthchecks, named volumes, and advanced networking
+version: '3.8'
+
+# =============================================================================
+# SERVICE DEFINITIONS
+# =============================================================================
+services:
+  # ---------------------------------------------------------------------------
+  # BACKEND SERVICE - Node.js/Express.js Application
+  # ---------------------------------------------------------------------------
+  # Primary application service built from Dockerfile with comprehensive
+  # configuration for environment variables, health monitoring, and networking
+  backend:
+    # Container identification and build configuration
+    container_name: nodejs-tutorial-backend
+    image: nodejs-tutorial-backend:latest
+    
+    # Build configuration using multi-stage Dockerfile
+    build:
+      context: ../src/backend
+      dockerfile: Dockerfile
+      target: production
+      args:
+        - NODE_ENV=production
+        - PORT=3000
+    
+    # Port mapping for development and direct access
+    # Production traffic should flow through NGINX reverse proxy
+    ports:
+      - "3000:3000"
+    
+    # Environment variable configuration
+    # Supports both .env file and explicit environment variables
+    environment:
+      # Core Node.js environment configuration
+      - NODE_ENV=production
+      - PORT=3000
+      
+      # Application-specific environment variables
+      - APP_NAME=nodejs-hello-tutorial
+      - APP_VERSION=1.0.0
+      
+      # Monitoring and observability configuration
+      - ENABLE_METRICS=true
+      - METRICS_PORT=3000
+      - HEALTH_CHECK_ENDPOINT=/health
+      
+      # Security and operational configuration
+      - TRUST_PROXY=true
+      - HELMET_ENABLED=true
+      - CORS_ENABLED=false
+      
+      # Logging configuration
+      - LOG_LEVEL=info
+      - LOG_FORMAT=combined
+      - REQUEST_LOGGING=true
+    
+    # Environment file support for development and testing
+    # Allows override of environment variables from file
+    env_file:
+      - ../src/backend/.env.example
+    
+    # Volume mounts for development and configuration
+    volumes:
+      # Mount application logs for debugging and monitoring
+      - backend_logs:/usr/src/app/logs
+      
+      # Mount configuration files for dynamic updates (development)
+      # Uncomment for development mode with file watching
+      # - ../src/backend/config:/usr/src/app/config:ro
+      
+      # Mount SSL certificates if HTTPS is required
+      # - ssl_certs:/usr/src/app/ssl:ro
+    
+    # Comprehensive health check configuration
+    # Validates application responsiveness and proper startup
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Restart policy for production reliability
+    # Ensures service availability during system recovery
+    restart: unless-stopped
+    
+    # Resource limits for container stability
+    # Prevents resource exhaustion and ensures predictable performance
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 256M
+        reservations:
+          cpus: '0.5'
+          memory: 128M
+    
+    # Network configuration for inter-service communication
+    networks:
+      - tutorial-network
+    
+    # Logging configuration for centralized log management
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Additional labels for container management and monitoring
+    labels:
+      - "com.tutorial.service=backend"
+      - "com.tutorial.environment=production"
+      - "com.tutorial.version=1.0.0"
+      - "traefik.enable=false"
+
+  # ---------------------------------------------------------------------------
+  # NGINX SERVICE - Reverse Proxy and Load Balancer
+  # ---------------------------------------------------------------------------
+  # Production-ready reverse proxy service providing HTTP traffic routing,
+  # security headers, and production-like deployment architecture
+  nginx:
+    # Container identification and image configuration
+    container_name: nodejs-tutorial-nginx
+    image: nginx:1.25-alpine
+    
+    # Primary HTTP port exposure for external access
+    # All external traffic flows through this service
+    ports:
+      - "80:80"
+    
+    # Configuration and content volume mounts
+    volumes:
+      # Mount custom NGINX configuration
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      
+      # Mount custom error pages and static content
+      - ./nginx/html:/usr/share/nginx/html:ro
+      
+      # Mount SSL certificates for HTTPS (if required)
+      # - ssl_certs:/etc/nginx/ssl:ro
+      
+      # Mount logs for monitoring and debugging
+      - nginx_logs:/var/log/nginx
+    
+    # Service dependencies - ensures backend is available before startup
+    depends_on:
+      backend:
+        condition: service_healthy
+    
+    # Environment variables for NGINX configuration
+    environment:
+      # Backend service connection configuration
+      - BACKEND_HOST=backend
+      - BACKEND_PORT=3000
+      
+      # NGINX operational configuration
+      - NGINX_WORKER_PROCESSES=auto
+      - NGINX_WORKER_CONNECTIONS=1024
+      
+      # Security configuration
+      - NGINX_HIDE_VERSION=true
+      - NGINX_GZIP_ENABLED=true
+    
+    # Health check configuration for reverse proxy
+    # Validates NGINX is properly routing traffic to backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    
+    # Restart policy for high availability
+    restart: unless-stopped
+    
+    # Resource limits for NGINX service
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
+        reservations:
+          cpus: '0.2'
+          memory: 64M
+    
+    # Network configuration
+    networks:
+      - tutorial-network
+    
+    # Logging configuration
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Service labels for management and monitoring
+    labels:
+      - "com.tutorial.service=nginx"
+      - "com.tutorial.environment=production"
+      - "com.tutorial.version=1.0.0"
+      - "traefik.enable=false"
+
+  # ---------------------------------------------------------------------------
+  # PROMETHEUS SERVICE - Metrics Collection and Storage
+  # ---------------------------------------------------------------------------
+  # Time-series database for metrics collection, storage, and querying
+  # Provides comprehensive monitoring data for Grafana visualization
+  prometheus:
+    # Container identification and image configuration
+    container_name: nodejs-tutorial-prometheus
+    image: prom/prometheus:v2.47.0
+    
+    # Prometheus web interface and API port
+    ports:
+      - "9090:9090"
+    
+    # Configuration and data volume mounts
+    volumes:
+      # Mount Prometheus configuration
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      
+      # Mount alerting rules (optional)
+      - ./monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      
+      # Persistent storage for metrics data
+      - prometheus_data:/prometheus
+      
+      # Mount console templates and libraries
+      - ./monitoring/consoles:/etc/prometheus/consoles:ro
+      - ./monitoring/console_libraries:/etc/prometheus/console_libraries:ro
+    
+    # Command line arguments for Prometheus configuration
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--storage.tsdb.retention.size=5GB'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+      - '--web.external-url=http://localhost:9090'
+      - '--web.page-title=Node.js Tutorial Metrics'
+      - '--log.level=info'
+      - '--log.format=json'
+    
+    # Service dependencies - ensures backend is available for scraping
+    depends_on:
+      backend:
+        condition: service_healthy
+    
+    # Environment variables for Prometheus configuration
+    environment:
+      - PROMETHEUS_RETENTION_TIME=15d
+      - PROMETHEUS_RETENTION_SIZE=5GB
+      - PROMETHEUS_ENABLE_ADMIN_API=true
+      - PROMETHEUS_ENABLE_LIFECYCLE=true
+    
+    # Health check configuration for Prometheus
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    
+    # Restart policy for monitoring continuity
+    restart: unless-stopped
+    
+    # Resource limits for Prometheus service
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    
+    # Network configuration
+    networks:
+      - tutorial-network
+    
+    # Logging configuration
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Service labels for management
+    labels:
+      - "com.tutorial.service=prometheus"
+      - "com.tutorial.environment=production"
+      - "com.tutorial.version=1.0.0"
+
+  # ---------------------------------------------------------------------------
+  # GRAFANA SERVICE - Metrics Visualization and Dashboarding
+  # ---------------------------------------------------------------------------
+  # Comprehensive visualization platform for monitoring data analysis
+  # Provides pre-configured dashboards and alerting capabilities
+  grafana:
+    # Container identification and image configuration
+    container_name: nodejs-tutorial-grafana
+    image: grafana/grafana:10.4.2
+    
+    # Grafana web interface port (mapped to 3001 to avoid backend conflict)
+    ports:
+      - "3001:3000"
+    
+    # Configuration and data volume mounts
+    volumes:
+      # Persistent storage for Grafana data and configuration
+      - grafana_data:/var/lib/grafana
+      
+      # Mount custom dashboards for automatic import
+      - ./monitoring/grafana-dashboard.json:/etc/grafana/provisioning/dashboards/nodejs-tutorial.json:ro
+      
+      # Mount dashboard provisioning configuration
+      - ./monitoring/grafana-provisioning-dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
+      
+      # Mount datasource provisioning configuration
+      - ./monitoring/grafana-provisioning-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+      
+      # Mount custom configuration file
+      - ./monitoring/grafana.ini:/etc/grafana/grafana.ini:ro
+      
+      # Mount plugins directory for custom plugins
+      - grafana_plugins:/var/lib/grafana/plugins
+    
+    # Service dependencies - ensures Prometheus is available as data source
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    
+    # Comprehensive environment configuration for Grafana
+    environment:
+      # Security configuration
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_DISABLE_GRAVATAR=true
+      - GF_SECURITY_ALLOW_EMBEDDING=false
+      
+      # Server configuration
+      - GF_SERVER_HTTP_PORT=3000
+      - GF_SERVER_DOMAIN=localhost
+      - GF_SERVER_ROOT_URL=http://localhost:3001
+      - GF_SERVER_ENABLE_GZIP=true
+      
+      # Database configuration (using embedded SQLite)
+      - GF_DATABASE_TYPE=sqlite3
+      - GF_DATABASE_PATH=/var/lib/grafana/grafana.db
+      
+      # Analytics and reporting configuration
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_ANALYTICS_CHECK_FOR_UPDATES=false
+      
+      # Users and authentication configuration
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_USERS_ALLOW_ORG_CREATE=false
+      - GF_USERS_AUTO_ASSIGN_ORG=true
+      - GF_USERS_AUTO_ASSIGN_ORG_ROLE=Viewer
+      
+      # Alerting configuration
+      - GF_ALERTING_ENABLED=true
+      - GF_ALERTING_EXECUTE_ALERTS=true
+      
+      # Provisioning configuration
+      - GF_PROVISIONING_AUTO_ASSIGN_ORG=true
+      - GF_PROVISIONING_AUTO_ASSIGN_ORG_ROLE=Admin
+      
+      # Logging configuration
+      - GF_LOG_MODE=console
+      - GF_LOG_LEVEL=info
+      
+      # Feature toggles
+      - GF_FEATURE_TOGGLES_ENABLE=publicDashboards
+      
+      # Plugin configuration
+      - GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=false
+      - GF_PLUGINS_ENABLE_ALPHA=false
+      
+      # Install additional plugins
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    
+    # Health check configuration for Grafana
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    # Restart policy for dashboard availability
+    restart: unless-stopped
+    
+    # Resource limits for Grafana service
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 256M
+        reservations:
+          cpus: '0.5'
+          memory: 128M
+    
+    # Network configuration
+    networks:
+      - tutorial-network
+    
+    # Logging configuration
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Service labels for management
+    labels:
+      - "com.tutorial.service=grafana"
+      - "com.tutorial.environment=production"
+      - "com.tutorial.version=1.0.0"
+
+# =============================================================================
+# VOLUME DEFINITIONS
+# =============================================================================
+# Named volumes for persistent data storage across container restarts
+# Ensures data persistence and enables backup/restore operations
+volumes:
+  # Prometheus time-series database storage
+  # Retains metrics data for long-term analysis and historical trends
+  prometheus_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/prometheus
+    labels:
+      - "com.tutorial.volume=prometheus-data"
+      - "com.tutorial.backup=true"
+  
+  # Grafana configuration and dashboard storage
+  # Preserves custom dashboards, user settings, and configuration
+  grafana_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/grafana
+    labels:
+      - "com.tutorial.volume=grafana-data"
+      - "com.tutorial.backup=true"
+  
+  # Grafana plugins storage
+  # Allows persistent custom plugin installation
+  grafana_plugins:
+    driver: local
+    labels:
+      - "com.tutorial.volume=grafana-plugins"
+  
+  # Backend application logs
+  # Centralized logging for debugging and monitoring
+  backend_logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./logs/backend
+    labels:
+      - "com.tutorial.volume=backend-logs"
+      - "com.tutorial.backup=false"
+  
+  # NGINX access and error logs
+  # Web server logging for traffic analysis and debugging
+  nginx_logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./logs/nginx
+    labels:
+      - "com.tutorial.volume=nginx-logs"
+      - "com.tutorial.backup=false"
+  
+  # SSL certificate storage (optional)
+  # Persistent storage for TLS certificates
+  ssl_certs:
+    driver: local
+    labels:
+      - "com.tutorial.volume=ssl-certs"
+      - "com.tutorial.backup=true"
+
+# =============================================================================
+# NETWORK DEFINITIONS
+# =============================================================================
+# Custom network configuration for secure inter-service communication
+# Provides isolation, service discovery, and network-level security
+networks:
+  # Tutorial application network
+  # Enables secure communication between all services
+  tutorial-network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: nodejs-tutorial-br
+      com.docker.network.bridge.enable_icc: "true"
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+      com.docker.network.bridge.host_binding_ipv4: "0.0.0.0"
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+    labels:
+      - "com.tutorial.network=tutorial-network"
+      - "com.tutorial.environment=production"
+    # Network security and isolation
+    internal: false
+    attachable: true
+    
+  # Monitoring network (optional for enhanced isolation)
+  # Separates monitoring traffic from application traffic
+  monitoring-network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: nodejs-monitoring-br
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.21.0.0/16
+          gateway: 172.21.0.1
+    labels:
+      - "com.tutorial.network=monitoring-network"
+      - "com.tutorial.environment=production"
+    internal: false
+    attachable: false
+
+# =============================================================================
+# CONFIGURATION AND DEPLOYMENT NOTES
+# =============================================================================
+# 
+# QUICK START:
+# 1. Clone the repository and navigate to the infrastructure directory
+# 2. Run: docker-compose up --build
+# 3. Access services:
+#    - Application: http://localhost (via NGINX)
+#    - Prometheus: http://localhost:9090
+#    - Grafana: http://localhost:3001 (admin/admin)
+#
+# DEVELOPMENT MODE:
+# - Use: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+# - Enables file watching and development tools
+# - Exposes additional debugging ports
+#
+# PRODUCTION DEPLOYMENT:
+# - Set appropriate environment variables
+# - Configure SSL certificates
+# - Set up proper backup strategies for volumes
+# - Configure monitoring and alerting
+# - Implement log rotation and retention policies
+#
+# MONITORING AND OBSERVABILITY:
+# - Prometheus scrapes metrics from backend service
+# - Grafana provides visualization dashboards
+# - Health checks ensure service availability
+# - Logging provides debugging and audit trails
+#
+# SECURITY CONSIDERATIONS:
+# - All services run with non-root users
+# - Network isolation prevents unauthorized access
+# - Security headers configured in NGINX
+# - Minimal container attack surface with Alpine Linux
+# - Regular security updates through base image updates
+#
+# BACKUP AND RECOVERY:
+# - Prometheus data: ./data/prometheus
+# - Grafana data: ./data/grafana
+# - Application logs: ./logs/
+# - Configuration files: ./nginx/, ./monitoring/
+#
+# SCALING CONSIDERATIONS:
+# - Backend service can be scaled with: docker-compose up --scale backend=3
+# - NGINX load balancing configuration required for multiple backend instances
+# - Prometheus can handle multiple target instances
+# - Grafana dashboards automatically adapt to multiple instances
+#
+# TROUBLESHOOTING:
+# - Check service logs: docker-compose logs [service-name]
+# - Verify health checks: docker-compose ps
+# - Test network connectivity: docker-compose exec backend ping nginx
+# - Validate configuration: docker-compose config
+#
+# MAINTENANCE:
+# - Regular updates: docker-compose pull && docker-compose up -d
+# - Log rotation: Configure logrotate for ./logs/ directory
+# - Backup volumes: Regular backup of ./data/ directory
+# - Security updates: Monitor base image security advisories
+# =============================================================================
