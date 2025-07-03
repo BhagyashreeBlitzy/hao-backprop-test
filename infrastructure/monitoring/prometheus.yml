@@ -1,56 +1,233 @@
-# Prometheus configuration file for Node.js Hello World application monitoring
-# This defines metrics collection settings, scrape targets, and intervals
+# Prometheus configuration for Node.js/Express.js tutorial backend service
+# This configuration enables metrics scraping from the backend service and provides
+# time-series data for visualization in Grafana dashboards.
+# Compatible with Docker Compose deployment and designed for educational use.
 
-# Global configuration specifies parameters that are valid in all other configuration contexts
+# Global configuration for scrape intervals and evaluation
 global:
-  # How frequently to scrape targets by default
+  # How frequently to scrape targets by default (near real-time for educational demos)
   scrape_interval: 15s
-  # How frequently to evaluate rules
+  
+  # How frequently to evaluate rules (alerting rules evaluation interval)
   evaluation_interval: 15s
-  # How long until a scrape request times out
-  scrape_timeout: 10s
+  
+  # Attach labels to any time series or alerts when communicating with
+  # external systems (federation, remote storage, Alertmanager)
+  external_labels:
+    monitor: 'nodejs-tutorial-monitor'
+    environment: 'tutorial'
 
-# Scrape configurations contain the targets and parameters for metrics collection
+# Alertmanager configuration (optional for educational deployment)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - alertmanager:9093
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'
+rule_files:
+  # Optional: Add alerting rules for backend service health monitoring
+  # - "alert_rules.yml"
+
+# Scrape configuration for monitoring targets
 scrape_configs:
-  # Self-monitoring of the Prometheus server
-  - job_name: 'prometheus'
+  # Primary job for scraping Node.js/Express.js backend service metrics
+  - job_name: 'nodejs-backend'
+    
+    # Override the global default and scrape targets from this job every 15 seconds
+    scrape_interval: 15s
+    
+    # Timeout for scraping targets (should be less than scrape_interval)
+    scrape_timeout: 10s
+    
+    # The HTTP resource path on which to fetch metrics from targets
+    metrics_path: /metrics
+    
+    # Configures the protocol scheme used for requests (HTTP/HTTPS)
+    scheme: http
+    
+    # Static configuration for Docker Compose service discovery
     static_configs:
-      - targets: ['localhost:9090']
+      - targets:
+          # Docker Compose service name and port for the backend service
+          - 'backend:3000'
+        labels:
+          # Custom labels for identification and filtering in Grafana
+          service: 'nodejs-backend'
+          component: 'tutorial-backend'
+          tier: 'application'
+    
+    # Metric relabeling rules to enhance metric labels
+    metric_relabel_configs:
+      # Ensure consistent instance labeling
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'backend:3000'
+      
+      # Add environment label for multi-environment support
+      - target_label: environment
+        replacement: 'tutorial'
+      
+      # Add deployment type label
+      - target_label: deployment
+        replacement: 'docker-compose'
+    
+    # Relabeling configuration for target discovery
+    relabel_configs:
+      # Set the instance label to the target address
+      - source_labels: [__address__]
+        target_label: __param_target
+      
+      # Set the instance label for display purposes
+      - source_labels: [__param_target]
+        target_label: instance
+      
+      # Keep only the address for the actual scraping
+      - target_label: __address__
+        replacement: 'backend:3000'
+
+  # Optional: Additional job for scraping backend health check endpoint
+  - job_name: 'nodejs-backend-health'
+    
+    # Health checks can be more frequent for rapid issue detection
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    
+    # Health check endpoint path
+    metrics_path: /health
+    
+    # Static configuration for health check endpoint
+    static_configs:
+      - targets:
+          - 'backend:3000'
+        labels:
+          service: 'nodejs-backend'
+          component: 'tutorial-backend'
+          check_type: 'health'
+    
+    # Metric relabeling for health check metrics
+    metric_relabel_configs:
+      # Add health check specific labels
+      - target_label: health_check
+        replacement: 'true'
+    
+    # Only scrape if health endpoint exposes Prometheus metrics
+    # Note: This job is optional and only active if the backend exposes health metrics
+
+  # Optional: Self-monitoring of Prometheus server
+  - job_name: 'prometheus-self'
+    
+    # Prometheus self-monitoring configuration
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    
+    # Default metrics path for Prometheus
+    metrics_path: /metrics
+    
+    static_configs:
+      - targets:
+          # Prometheus server itself (within Docker Compose network)
+          - 'prometheus:9090'
         labels:
           service: 'prometheus'
-    metrics_path: '/metrics'
-    scheme: 'http'
+          component: 'monitoring'
+          tier: 'infrastructure'
 
-  # Application metrics monitoring
-  - job_name: 'hello-world-app'
-    static_configs:
-      - targets: ['hello-world-app:3000']
+# Optional: Recording rules for pre-computed metrics and aggregations
+# Useful for complex queries used frequently in Grafana dashboards
+recording_rules:
+  # Example recording rules for common metrics used in dashboards
+  - name: nodejs_backend_recording_rules
+    interval: 30s
+    rules:
+      # Pre-compute request rate for faster dashboard loading
+      - record: job:http_requests_rate
+        expr: sum(rate(http_requests_total{job="nodejs-backend"}[1m])) by (job, instance)
         labels:
-          service: 'hello-world-app'
-    metrics_path: '/metrics'
-    scheme: 'http'
-    # More frequent scraping for application metrics
-    scrape_interval: 5s
-    scrape_timeout: 3s
-
-  # Application health monitoring
-  - job_name: 'hello-world-health'
-    static_configs:
-      - targets: ['hello-world-app:3000']
+          metric_type: 'rate'
+      
+      # Pre-compute error rate percentage
+      - record: job:http_error_rate_percent
+        expr: |
+          (
+            sum(rate(http_requests_total{job="nodejs-backend",status=~"4..|5.."}[1m])) by (job, instance)
+            /
+            sum(rate(http_requests_total{job="nodejs-backend"}[1m])) by (job, instance)
+          ) * 100
         labels:
-          service: 'hello-world-app'
-          endpoint: 'health'
-    metrics_path: '/health'
-    scheme: 'http'
-    # Less frequent health checks
-    scrape_interval: 30s
-    scrape_timeout: 5s
+          metric_type: 'error_rate'
+      
+      # Pre-compute average response time
+      - record: job:http_request_duration_average
+        expr: |
+          sum(rate(http_request_duration_seconds_sum{job="nodejs-backend"}[1m])) by (job, instance)
+          /
+          sum(rate(http_request_duration_seconds_count{job="nodejs-backend"}[1m])) by (job, instance)
+        labels:
+          metric_type: 'response_time'
 
-# Alerting configuration (placeholder - not fully configured for this simple application)
-alerting:
-  alertmanagers:
-    - static_configs:
-        - targets: []  # No alertmanager configured
+# Optional: Alerting rules configuration
+# Uncomment and customize based on specific monitoring requirements
+# alerting_rules:
+#   - name: nodejs_backend_alerts
+#     rules:
+#       # Alert when backend service is down
+#       - alert: BackendServiceDown
+#         expr: up{job="nodejs-backend"} == 0
+#         for: 1m
+#         labels:
+#           severity: critical
+#           service: nodejs-backend
+#         annotations:
+#           summary: "Backend service is down"
+#           description: "The Node.js backend service has been down for more than 1 minute"
+#       
+#       # Alert on high error rate
+#       - alert: HighErrorRate
+#         expr: job:http_error_rate_percent > 5
+#         for: 2m
+#         labels:
+#           severity: warning
+#           service: nodejs-backend
+#         annotations:
+#           summary: "High error rate detected"
+#           description: "Error rate is {{ $value }}% for the past 2 minutes"
+#       
+#       # Alert on high memory usage
+#       - alert: HighMemoryUsage
+#         expr: process_resident_memory_bytes{job="nodejs-backend"} > 100000000
+#         for: 5m
+#         labels:
+#           severity: warning
+#           service: nodejs-backend
+#         annotations:
+#           summary: "High memory usage detected"
+#           description: "Memory usage is {{ $value | humanize }}B"
 
-# Rules files (placeholder - not used in this simple configuration)
-rule_files: []
+# Remote write configuration (optional for external storage)
+# remote_write:
+#   - url: "http://remote-storage:9090/api/v1/write"
+#     remote_timeout: 30s
+#     queue_config:
+#       max_samples_per_send: 1000
+#       max_shards: 200
+#       capacity: 2500
+
+# Remote read configuration (optional for external storage)
+# remote_read:
+#   - url: "http://remote-storage:9090/api/v1/read"
+#     remote_timeout: 1m
+
+# Storage configuration for local data retention
+# storage:
+#   tsdb:
+#     retention.time: 15d
+#     retention.size: 10GB
+#     wal-compression: true
+
+# Server configuration for Prometheus web interface
+# web:
+#   enable-lifecycle: true
+#   enable-admin-api: true
+#   console.templates: "/etc/prometheus/consoles"
+#   console.libraries: "/etc/prometheus/console_libraries"
