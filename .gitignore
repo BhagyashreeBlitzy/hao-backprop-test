@@ -1,36 +1,58 @@
-# Node.js specific
+# Node.js dependencies
 node_modules/
-npm-debug.log
-yarn-debug.log
-yarn-error.log
-.npm
-.yarn
-package-lock.json
-yarn.lock
 
-# Environment and configuration
+# Environment variable files
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
 
-# IDE and editor files
-.idea/
-.vscode/
-*.swp
-*.swo
-.DS_Store
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Build and output directories
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Build output
 dist/
 build/
 coverage/
 
-# Logs
-logs
-*.log
+# Test output
+test-results/
+test-output/
+output/
+*.tmp
+*.temp
+*.lcov
+.nyc_output/
+*.tsbuildinfo
 
-# Temporary files
-tmp/
-temp/
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE/editor files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Docker artifacts
+docker-compose.override.yml
+
+# Miscellaneous
+*.swp
+*.swo
+
+# Ignore local scripts output
+scripts/*.log
+
+# Ignore backend-specific lock files
+package-lock.json
+yarn.lock
